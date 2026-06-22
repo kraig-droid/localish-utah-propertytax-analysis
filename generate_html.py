@@ -274,7 +274,6 @@ html_template = """<!DOCTYPE html>
         .stats-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 20px;
             margin-bottom: 20px;
             padding: 16px;
             background: #f8f9fa;
@@ -282,8 +281,9 @@ html_template = """<!DOCTYPE html>
         }
 
         .stat-item {
-            flex: 1;
-            min-width: 120px;
+            flex: 0 0 auto;
+            min-width: 80px;
+            margin-right: 16px;
         }
 
         .stat-label {
@@ -613,26 +613,17 @@ html_template = """<!DOCTYPE html>
             const ovc2025 = filteredCities.find(c => c.city_name === 'OGDEN VALLEY CITY (2025 RATE)');
             const ovcProposed = filteredCities.find(c => c.city_name === 'OGDEN VALLEY CITY (PROPOSED RATE)');
 
-            // Add OVC legend to stats
-            let ovcLegendHTML = '';
-            if (ovc2025 || ovcProposed) {
-                ovcLegendHTML = `
-                    <div style="width: 100%; margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd;">
-                        <div style="font-size: 12px; color: #666; margin-bottom: 8px;">Ogden Valley City:</div>
-                        ${ovc2025 ? `<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 3px; background: repeating-linear-gradient(90deg, #9b59b6 0, #9b59b6 4px, transparent 4px, transparent 8px); border: 1px solid #9b59b6;"></span><span style="font-size: 13px;">2025 Rate: ${ovc2025.max_local_rate.toFixed(6)}</span></div>` : ''}
-                        ${ovcProposed ? `<div style="display: flex; align-items: center; gap: 8px;"><span style="width: 20px; height: 3px; background: repeating-linear-gradient(90deg, #28a745 0, #28a745 4px, transparent 4px, transparent 8px); border: 1px solid #28a745;"></span><span style="font-size: 13px;">Proposed Rate: ${ovcProposed.max_local_rate.toFixed(6)}</span></div>` : ''}
-                    </div>
-                `;
-            }
+            // OVC labels are now drawn directly on the chart, no legend needed
+            const ovcLegendHTML = '';
 
             // Add statistics legend
             const statsLegendHTML = `
                 <div style="width: 100%; margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd;">
-                    <div style="font-size: 12px; color: #666; margin-bottom: 8px;">Statistics:</div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 2px; background: #e74c3c;"></span><span style="font-size: 13px;">Mean: ${stats.mean.toFixed(6)}</span></div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 2px; background: #3498db;"></span><span style="font-size: 13px;">Median: ${stats.median.toFixed(6)}</span></div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 2px; background: repeating-linear-gradient(90deg, #f39c12 0, #f39c12 4px, transparent 4px, transparent 8px); border: 1px solid #f39c12;"></span><span style="font-size: 13px;">25th Percentile: ${stats.q25.toFixed(6)}</span></div>
-                    <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 20px; height: 2px; background: repeating-linear-gradient(90deg, #f39c12 0, #f39c12 4px, transparent 4px, transparent 8px); border: 1px solid #f39c12;"></span><span style="font-size: 13px;">75th Percentile: ${stats.q75.toFixed(6)}</span></div>
+                    <div style="font-size: 12px; color: #666; margin-bottom: 8px;">Quartiles:</div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(231, 76, 60, 0.3); border: 1px solid #e74c3c;"></span><span style="font-size: 13px;">Q1 (0-25%): ${stats.min.toFixed(6)} - ${stats.q25.toFixed(6)}</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(243, 156, 18, 0.3); border: 1px solid #f39c12;"></span><span style="font-size: 13px;">Q2 (25-50%): ${stats.q25.toFixed(6)} - ${stats.median.toFixed(6)}</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(46, 204, 113, 0.3); border: 1px solid #2ecc71;"></span><span style="font-size: 13px;">Q3 (50-75%): ${stats.median.toFixed(6)} - ${stats.q75.toFixed(6)}</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 20px; height: 12px; background: rgba(52, 152, 219, 0.3); border: 1px solid #3498db;"></span><span style="font-size: 13px;">Q4 (75-100%): ${stats.q75.toFixed(6)} - ${stats.max.toFixed(6)}</span></div>
                 </div>
             `;
 
@@ -651,10 +642,7 @@ html_template = """<!DOCTYPE html>
                     <div class="stat-label">Max</div>
                     <div class="stat-value">${stats.max.toFixed(6)}</div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-label">Mean</div>
-                    <div class="stat-value">${stats.mean.toFixed(6)}</div>
-                </div>
+                <div style="width: 100%;"></div>
                 <div class="stat-item">
                     <div class="stat-label">Median</div>
                     <div class="stat-value">${stats.median.toFixed(6)}</div>
@@ -663,15 +651,9 @@ html_template = """<!DOCTYPE html>
                     <div class="stat-label">Std Dev</div>
                     <div class="stat-value">${stats.std.toFixed(6)}</div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-label">25th Percentile</div>
-                    <div class="stat-value">${stats.q25.toFixed(6)}</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">75th Percentile</div>
-                    <div class="stat-value">${stats.q75.toFixed(6)}</div>
-                </div>
-                ${ovcLegendHTML}
+                <div style="width: 100%;"></div>
+                ${ovc2025 ? `<div class="stat-item"><div class="stat-label">OVC 2025</div><div class="stat-value">${ovc2025.max_local_rate.toFixed(6)}</div></div>` : ''}
+                ${ovcProposed ? `<div class="stat-item"><div class="stat-label">OVC Proposed</div><div class="stat-value">${ovcProposed.max_local_rate.toFixed(6)}</div></div>` : ''}
                 ${statsLegendHTML}
             `;
 
@@ -683,11 +665,41 @@ html_template = """<!DOCTYPE html>
             // Create chart
             const ctx = document.getElementById('rateChart').getContext('2d');
 
-            // Inline plugin that draws vertical OVC marker lines.
+            // Inline plugin that draws quartile regions and OVC marker lines.
             // The x-axis is a category axis, so we convert each rate to a pixel
             // position using the spacing between category ticks.
             const ovcMarkerPlugin = {
                 id: 'ovcMarkers',
+                beforeDatasetsDraw(chart) {
+                    const xAxis = chart.scales.x;
+                    const yAxis = chart.scales.y;
+                    // Pixel centers of bin 0 and bin 1 give us pixels-per-bin.
+                    const x0 = xAxis.getPixelForTick(0);
+                    const x1 = xAxis.getPixelForTick(1);
+                    const pxPerBin = x1 - x0;
+
+                    function pixelForRate(rate) {
+                        // Bin i is centered on rate (minRate + (i+0.5)*binWidth),
+                        // so the fractional bin index for a rate is:
+                        const fracIndex = (rate - minRate) / binWidth - 0.5;
+                        return x0 + fracIndex * pxPerBin;
+                    }
+
+                    function drawFilledRegion(startRate, endRate, color) {
+                        const xStart = pixelForRate(startRate);
+                        const xEnd = pixelForRate(endRate);
+                        chart.ctx.save();
+                        chart.ctx.fillStyle = color;
+                        chart.ctx.fillRect(xStart, yAxis.top, xEnd - xStart, yAxis.bottom - yAxis.top);
+                        chart.ctx.restore();
+                    }
+
+                    // Draw quartile regions behind the main curve
+                    drawFilledRegion(stats.min, stats.q25, 'rgba(231, 76, 60, 0.3)');      // Q1 - red
+                    drawFilledRegion(stats.q25, stats.median, 'rgba(243, 156, 18, 0.3)');  // Q2 - orange
+                    drawFilledRegion(stats.median, stats.q75, 'rgba(46, 204, 113, 0.3)');  // Q3 - green
+                    drawFilledRegion(stats.q75, stats.max, 'rgba(52, 152, 219, 0.3)');    // Q4 - blue
+                },
                 afterDatasetsDraw(chart) {
                     const xAxis = chart.scales.x;
                     const yAxis = chart.scales.y;
@@ -718,28 +730,42 @@ html_template = """<!DOCTYPE html>
                         chart.ctx.restore();
                     }
 
-                    // Draw statistical lines
-                    drawLine(stats.mean, '#e74c3c', false);      // Mean - red solid
-                    drawLine(stats.median, '#3498db', false);    // Median - blue solid
-                    drawLine(stats.q25, '#f39c12', true);         // 25th percentile - orange dotted
-                    drawLine(stats.q75, '#f39c12', true);         // 75th percentile - orange dotted
+                    function drawLabel(rate, text, color) {
+                        const x = pixelForRate(rate);
+                        chart.ctx.save();
+                        chart.ctx.font = '12px sans-serif';
+                        chart.ctx.fillStyle = color;
+                        chart.ctx.textAlign = 'center';
+                        chart.ctx.textBaseline = 'top';
+                        // Draw label at top of chart
+                        chart.ctx.fillText(text, x, yAxis.top + 5);
+                        chart.ctx.restore();
+                    }
 
                     // Draw OVC lines on top
-                    if (ovc2025) drawLine(ovc2025.max_local_rate, '#9b59b6', true);
-                    if (ovcProposed) drawLine(ovcProposed.max_local_rate, '#28a745', true);
+                    if (ovc2025) {
+                        drawLine(ovc2025.max_local_rate, '#9b59b6', true);
+                        drawLabel(ovc2025.max_local_rate, 'OVC 2025', '#9b59b6');
+                    }
+                    if (ovcProposed) {
+                        drawLine(ovcProposed.max_local_rate, '#28a745', true);
+                        drawLabel(ovcProposed.max_local_rate, 'OVC Proposed', '#28a745');
+                    }
                 }
             };
 
             window.rateChartInstance = new Chart(ctx, {
-                type: 'bar',
+                type: 'line',
                 data: {
                     labels: binLabels,
                     datasets: [{
                         label: 'Number of Cities',
                         data: bins,
-                        backgroundColor: 'rgba(0, 102, 204, 0.7)',
+                        backgroundColor: 'rgba(0, 102, 204, 0.2)',
                         borderColor: 'rgba(0, 102, 204, 1)',
-                        borderWidth: 1
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
                     }]
                 },
                 plugins: [ovcMarkerPlugin],
