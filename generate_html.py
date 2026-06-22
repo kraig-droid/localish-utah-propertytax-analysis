@@ -398,18 +398,6 @@ html_template = """<!DOCTYPE html>
                 Tax areas are geographic boundaries used by Utah's State Tax Commission to determine which taxing entities apply to a property. Each tax area has a unique code and extension number that identifies the combination of all taxing entities that levy taxes on properties within that area. These entities can include cities, counties, school districts, special service districts, water districts, sewer districts, and other local government entities.
             </p>
             <p>
-                <strong>Example: Riverdale (Weber County)</strong><br>
-                Tax area: <strong>583 - 0000</strong><br>
-            </p>
-            <ul>
-                <li>Riverdale: <em>0.001414</em> (3080)</li>
-                <li>Central Weber Sewer Improvement District: <em>0.000540</em> (4010)</li>
-                <li>Weber Basin Water Conservancy District: <em>0.000191</em> (4005)</li>
-                <li>Weber Area Dispatch 911 and Emergency Services District: <em>0.000163</em> (4320)</li>
-                <li>Weber County Mosquito Abatement District: <em>0.000064</em> (4080)</li>
-                <li>Roy Water Conservancy Subdistrict: <em>0.000044</em> (4130)</li>
-            </ul>
-            <p>
                 <a href="https://files.tax.utah.gov/propertytax/tax-rates/area-rates/taxarearates2025.pdf" target="_blank">Source document: Utah Tax Area Rates 2025 (PDF)</a>
             </p>
             <h3>Local-ish Rate Calculation</h3>
@@ -428,6 +416,26 @@ html_template = """<!DOCTYPE html>
                 <li>School district rates - Public school funding that applies across entire school districts</li>
                 <li>Library rates - County library system taxes</li>
                 <li>Public Improvement Districts (PID) - Special districts for infrastructure improvements</li>
+            </ul>
+            <p>
+                <strong>Example: Riverdale (Weber County)</strong><br>
+                Tax area: <strong>583 - 0000</strong><br>
+            </p>
+            <h4>Included rates</h4>
+            <ul>
+                <li>Riverdale: <em>0.001414</em> (3080)</li>
+                <li>Central Weber Sewer Improvement District: <em>0.000540</em> (4010)</li>
+                <li>Weber Basin Water Conservancy District: <em>0.000191</em> (4005)</li>
+                <li>Weber Area Dispatch 911 and Emergency Services District: <em>0.000163</em> (4320)</li>
+                <li>Weber County Mosquito Abatement District: <em>0.000064</em> (4080)</li>
+                <li>Roy Water Conservancy Subdistrict: <em>0.000044</em> (4130)</li>
+            </ul>
+            <h4>Excluded rates</h4>
+            <ul>
+                <li>Weber: <em>0.001938</em> (1010)</li>
+                <li>Multicounty Assessing & Collecting Levy: <em>0.000014</em> (1015)</li>
+                <li>County Assessing & Collecting Levy: <em>0.000163</em> (1020)</li>
+                <li>Weber County School District: <em>0.005792</em> (2020)</li>
             </ul>
             <h3>Max Local-ish Rate</h3>
             <p>
