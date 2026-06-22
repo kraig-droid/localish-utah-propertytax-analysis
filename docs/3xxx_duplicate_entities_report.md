@@ -1,0 +1,110 @@
+# Tax Areas with Multiple 3xxx Entities
+
+**Entity Code Range:** 3000-3999 (Incorporated cities/towns and special districts)
+**Data Source:** Utah State Tax Commission 2025 Tax Rate Data
+**Tax Area Identifier:** (County, TaxArea, TaxAreaExtension)
+
+## Tax Areas with Multiple 3xxx Entities
+
+### SALT LAKE County
+
+| Tax Area | Extension | Entity Name | Entity Code | Final Rate |
+|----------|-----------|-------------|-------------|------------|
+| 013 | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 013 | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01A | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01A | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01B | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01B | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01C | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01C | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01D | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01D | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01E | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01E | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01F | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01F | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01G | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01G | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01H | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01H | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01J | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01J | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01K | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01K | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01M | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01M | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01N | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01N | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01P | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01P | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01Q | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01Q | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01R | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01R | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01S | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01S | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01T | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01T | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01U | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01U | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01V | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01V | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01W | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01W | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01X | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01X | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01Y | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01Y | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 01Z | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 01Z | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 02A | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 02A | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 02B | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 02B | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 02C | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 02C | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 13B | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 13B | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 13C | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 13C | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 13F | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 13F | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 13H | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 13H | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 13I | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 13I | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 13K | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 13K | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 13N | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 13N | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 13P | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 13P | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 13Q | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 13Q | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 13R | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 13R | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 13S | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 13S | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| 13T | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| 13T | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+| ADX | 0000 | SALT LAKE CITY | 3070 | 0.003180 |
+| ADX | 0000 | SALT LAKE LIBRARY | 3071 | 0.000000 |
+
+---
+
+## Summary
+
+- **Total tax areas with multiple 3xxx entities:** 58
+- **All affected tax areas are in SALT LAKE County**
+- **Pattern:** Every affected tax area contains exactly 2 entities:
+  - SALT LAKE CITY (3070) with rate 0.003180
+  - SALT LAKE LIBRARY (3071) with rate 0.000000
+- **Root cause:** SALT LAKE LIBRARY is incorrectly classified as a 3xxx entity (code 3071) when it should be a special district (likely 6xxx)
+
+## Notes
+
+- This is the same bug identified in the city_tax_burden_report.md where SALT LAKE LIBRARY appeared as a separate city
+- The library district has a 3xxx code (3071) which causes it to be treated as a city entity
+- Since it has a 0.000000 rate, it doesn't affect tax calculations but causes data integrity issues
+- All 58 tax areas in Salt Lake County that have SALT LAKE CITY also incorrectly include SALT LAKE LIBRARY
