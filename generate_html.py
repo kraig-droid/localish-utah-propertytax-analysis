@@ -2,10 +2,10 @@ import json
 from pathlib import Path
 
 # Read the JSON data
-with open("data/city_tax_burden.json", "r") as f:
+with open("derived_data/city_tax_burden.json", "r") as f:
     cities_data = json.load(f)
 
-with open("data/entity_breakdown.json", "r") as f:
+with open("derived_data/entity_breakdown.json", "r") as f:
     entities_data = json.load(f)
 
 # HTML template
@@ -386,9 +386,9 @@ html_template = """<!DOCTYPE html>
         </table>
 
         <div class="chart-container visible" id="chartContainer">
+            <canvas id="rateChart" style="max-height: 400px;"></canvas>
             <div class="stats-container" id="statsContainer">
             </div>
-            <canvas id="rateChart" style="max-height: 400px;"></canvas>
         </div>
 
         <div class="methodology">
@@ -397,6 +397,18 @@ html_template = """<!DOCTYPE html>
             <p>
                 Tax areas are geographic boundaries used by Utah's State Tax Commission to determine which taxing entities apply to a property. Each tax area has a unique code and extension number that identifies the combination of all taxing entities that levy taxes on properties within that area. These entities can include cities, counties, school districts, special service districts, water districts, sewer districts, and other local government entities.
             </p>
+            <p>
+                <strong>Example: Riverdale (Weber County)</strong><br>
+                Tax area: <strong>583 - 0000</strong><br>
+            </p>
+            <ul>
+                <li>Riverdale: <em>0.001414</em> (3080)</li>
+                <li>Central Weber Sewer Improvement District: <em>0.000540</em> (4010)</li>
+                <li>Weber Basin Water Conservancy District: <em>0.000191</em> (4005)</li>
+                <li>Weber Area Dispatch 911 and Emergency Services District: <em>0.000163</em> (4320)</li>
+                <li>Weber County Mosquito Abatement District: <em>0.000064</em> (4080)</li>
+                <li>Roy Water Conservancy Subdistrict: <em>0.000044</em> (4130)</li>
+            </ul>
             <p>
                 <a href="https://files.tax.utah.gov/propertytax/tax-rates/area-rates/taxarearates2025.pdf" target="_blank">Source document: Utah Tax Area Rates 2025 (PDF)</a>
             </p>
@@ -699,10 +711,10 @@ html_template = """<!DOCTYPE html>
             const statsLegendHTML = `
                 <div style="width: 100%; margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd;">
                     <div style="font-size: 12px; color: #666; margin-bottom: 8px;">Quartiles:</div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(231, 76, 60, 0.3); border: 1px solid #e74c3c;"></span><span style="font-size: 13px;">Q1 (0-25%): ${stats.min.toFixed(6)} - ${stats.q25.toFixed(6)}</span></div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(243, 156, 18, 0.3); border: 1px solid #f39c12;"></span><span style="font-size: 13px;">Q2 (25-50%): ${stats.q25.toFixed(6)} - ${stats.median.toFixed(6)}</span></div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(46, 204, 113, 0.3); border: 1px solid #2ecc71;"></span><span style="font-size: 13px;">Q3 (50-75%): ${stats.median.toFixed(6)} - ${stats.q75.toFixed(6)}</span></div>
-                    <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 20px; height: 12px; background: rgba(52, 152, 219, 0.3); border: 1px solid #3498db;"></span><span style="font-size: 13px;">Q4 (75-100%): ${stats.q75.toFixed(6)} - ${stats.max.toFixed(6)}</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(231, 76, 60, 0.3); border: 1px solid #e74c3c;"></span><span style="font-size: 13px;">First Quartile (0-25%)</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(243, 156, 18, 0.3); border: 1px solid #f39c12;"></span><span style="font-size: 13px;">Second Quartile (25-50%)</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(46, 204, 113, 0.3); border: 1px solid #2ecc71;"></span><span style="font-size: 13px;">Third Quartile (50-75%)</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 20px; height: 12px; background: rgba(52, 152, 219, 0.3); border: 1px solid #3498db;"></span><span style="font-size: 13px;">Fourth Quartile (75-100%)</span></div>
                 </div>
             `;
 
@@ -854,8 +866,9 @@ html_template = """<!DOCTYPE html>
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Distribution of Max Local-ish Tax Rates',
-                            font: { size: 16 }
+                            text: ['How Utah Cities Stack Up on Local-Ish Taxes', '(Number of Cities in Each Tax Rate Range)'],
+                            font: { size: 16 },
+                            padding: { bottom: 20 }
                         },
                         legend: {
                             display: false
@@ -923,7 +936,8 @@ html_content = html_template.replace(
 )
 
 # Write to file
-output_path = Path("city_tax_burden.html")
+output_path = Path("docs/index.html")
+output_path.parent.mkdir(parents=True, exist_ok=True)
 with open(output_path, 'w') as f:
     f.write(html_content)
 

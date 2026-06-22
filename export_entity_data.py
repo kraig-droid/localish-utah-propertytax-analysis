@@ -4,11 +4,11 @@ import json
 from pathlib import Path
 
 # Connect to database
-db_path = Path("data/property_tax.db")
+db_path = Path("derived_data/property_tax.db")
 conn = sqlite3.connect(db_path)
 
 # Load the city data to get max tax areas
-city_data_path = Path("data/city_tax_burden.json")
+city_data_path = Path("derived_data/city_tax_burden.json")
 with open(city_data_path, 'r') as f:
     cities_data = json.load(f)
 
@@ -92,7 +92,8 @@ elif 'OGDEN VALLEY CITY (2025 RATE)' in entities_data:
     entities_data['OGDEN VALLEY CITY (PROPOSED RATE)'] = proposed_entities
 
 # Save to JSON
-output_path = Path("data/entity_breakdown.json")
+output_path = Path("derived_data/entity_breakdown.json")
+output_path.parent.mkdir(parents=True, exist_ok=True)
 with open(output_path, 'w') as f:
     json.dump(entities_data, f, indent=2)
 

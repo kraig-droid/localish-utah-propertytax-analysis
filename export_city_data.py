@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 # Connect to database
-db_path = Path("data/property_tax.db")
+db_path = Path("derived_data/property_tax.db")
 conn = sqlite3.connect(db_path)
 
 # Load population data
@@ -150,7 +150,8 @@ if ogden_valley:
 cities_data.sort(key=lambda x: x['max_local_rate'], reverse=True)
 
 # Save to JSON
-output_path = Path("data/city_tax_burden.json")
+output_path = Path("derived_data/city_tax_burden.json")
+output_path.parent.mkdir(parents=True, exist_ok=True)
 with open(output_path, 'w') as f:
     json.dump(cities_data, f, indent=2)
 
