@@ -664,8 +664,11 @@ html_template = """<!DOCTYPE html>
             const median = n % 2 === 0 ? (sorted[n/2 - 1] + sorted[n/2]) / 2 : sorted[Math.floor(n/2)];
             const variance = sorted.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / n;
             const std = Math.sqrt(variance);
-            const q25 = sorted[Math.floor(n * 0.25)];
-            const q75 = sorted[Math.floor(n * 0.75)];
+            // Use proper percentile calculation: for quartiles, use (n-1) * p
+            const q25Index = Math.floor((n - 1) * 0.25);
+            const q75Index = Math.floor((n - 1) * 0.75);
+            const q25 = sorted[q25Index];
+            const q75 = sorted[q75Index];
 
             return {
                 count: n,
@@ -715,14 +718,20 @@ html_template = """<!DOCTYPE html>
             // OVC labels are now drawn directly on the chart, no legend needed
             const ovcLegendHTML = '';
 
+            // Count cities in each quartile for verification
+            const q1Count = rates.filter(r => r <= stats.q25).length;
+            const q2Count = rates.filter(r => r > stats.q25 && r <= stats.median).length;
+            const q3Count = rates.filter(r => r > stats.median && r <= stats.q75).length;
+            const q4Count = rates.filter(r => r > stats.q75).length;
+
             // Add statistics legend
             const statsLegendHTML = `
                 <div style="width: 100%; margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd;">
-                    <div style="font-size: 12px; color: #666; margin-bottom: 8px;">Quartiles:</div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(231, 76, 60, 0.3); border: 1px solid #e74c3c;"></span><span style="font-size: 13px;">First Quartile (0-25%)</span></div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(243, 156, 18, 0.3); border: 1px solid #f39c12;"></span><span style="font-size: 13px;">Second Quartile (25-50%)</span></div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(46, 204, 113, 0.3); border: 1px solid #2ecc71;"></span><span style="font-size: 13px;">Third Quartile (50-75%)</span></div>
-                    <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 20px; height: 12px; background: rgba(52, 152, 219, 0.3); border: 1px solid #3498db;"></span><span style="font-size: 13px;">Fourth Quartile (75-100%)</span></div>
+                    <div style="font-size: 12px; color: #666; margin-bottom: 8px;">Quartiles (by city count):</div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(231, 76, 60, 0.3); border: 1px solid #e74c3c;"></span><span style="font-size: 13px;">Q1: ${stats.min.toFixed(6)} - ${stats.q25.toFixed(6)} (${q1Count} cities)</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(243, 156, 18, 0.3); border: 1px solid #f39c12;"></span><span style="font-size: 13px;">Q2: ${stats.q25.toFixed(6)} - ${stats.median.toFixed(6)} (${q2Count} cities)</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(46, 204, 113, 0.3); border: 1px solid #2ecc71;"></span><span style="font-size: 13px;">Q3: ${stats.median.toFixed(6)} - ${stats.q75.toFixed(6)} (${q3Count} cities)</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 20px; height: 12px; background: rgba(52, 152, 219, 0.3); border: 1px solid #3498db;"></span><span style="font-size: 13px;">Q4: ${stats.q75.toFixed(6)} - ${stats.max.toFixed(6)} (${q4Count} cities)</span></div>
                 </div>
             `;
 
