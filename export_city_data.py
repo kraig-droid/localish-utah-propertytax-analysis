@@ -11,8 +11,24 @@ conn = sqlite3.connect(db_path)
 pop_file = Path("data/UtahMunicipalBoundaries_221481185616367289.csv")
 pop_df = pd.read_csv(pop_file)
 
-# Normalize names for matching
-pop_df['name_normalized'] = pop_df['NAME'].str.upper().str.replace(' CITY', '').str.replace(' TOWN', '').str.strip()
+def normalize_city_name(name):
+    name = str(name).upper().strip()
+    for prefix in ('CITY OF ', 'TOWN OF '):
+        if name.startswith(prefix):
+            name = name[len(prefix):]
+    for suffix in (' CITY', ' TOWN'):
+        if name.endswith(suffix):
+            name = name[:-len(suffix)]
+    name = name.replace('.', '')
+    return name.strip()
+
+# Manual corrections for DB names that don't match the population CSV
+DB_NAME_CORRECTIONS = {
+    'SIGUARD': 'SIGURD',
+    'EAST CARBON - SUNNYSIDE': 'EAST CARBON',
+}
+
+pop_df['name_normalized'] = pop_df['NAME'].apply(normalize_city_name)
 pop_df['area_sq_miles'] = pop_df['Shape__Area'] * 3.861e-7
 
 # Query for city tax burden data
@@ -34,9 +50,9 @@ WITH city_tax_areas AS (
 breakdown AS (
     SELECT cta.County, cta.city_name, t.TaxArea, t.TaxAreaExtension,
         SUM(t.FinalRate) AS grand_total,
-        SUM(CASE WHEN CAST(t.EntityCode AS INTEGER) / 1000 IN (1,2) THEN t.FinalRate ELSE 0 END) AS county_school,
+        SUM(CASE WHEN CAST(t.EntityCode AS INTEGER) / 1000 IN (1,2) OR t.EntityName LIKE '%LIBRAR%' THEN t.FinalRate ELSE 0 END) AS county_school,
         SUM(CASE WHEN CAST(t.EntityCode AS INTEGER) / 1000 IN (5) THEN t.FinalRate ELSE 0 END) AS pid_burden,
-        SUM(CASE WHEN CAST(t.EntityCode AS INTEGER) / 1000 NOT IN (1,2,5) THEN t.FinalRate ELSE 0 END) AS city_burden
+        SUM(CASE WHEN CAST(t.EntityCode AS INTEGER) / 1000 NOT IN (1,2,5) AND t.EntityName NOT LIKE '%LIBRAR%' THEN t.FinalRate ELSE 0 END) AS city_burden
     FROM tax_rates t
     JOIN city_tax_areas cta ON t.County = cta.County AND t.TaxArea = cta.TaxArea AND t.TaxAreaExtension = cta.TaxAreaExtension
     GROUP BY cta.County, cta.city_name, t.TaxArea, t.TaxAreaExtension
@@ -68,7 +84,9 @@ ORDER BY County, max_city_burden DESC
 city_burden_df = pd.read_sql_query(query, conn)
 
 # Normalize city names for matching
-city_burden_df['name_normalized'] = city_burden_df['city_name'].str.upper().str.replace(' CITY', '').str.replace(' TOWN', '').str.strip()
+city_burden_df['name_normalized'] = city_burden_df['city_name'].apply(
+    lambda n: normalize_city_name(DB_NAME_CORRECTIONS.get(n, n))
+)
 
 # Add population and area data
 city_burden_df = city_burden_df.merge(
@@ -78,10 +96,11 @@ city_burden_df = city_burden_df.merge(
 )
 
 # For multi-county cities, sum their populations and areas
+nan_sum = lambda x: x.sum(min_count=1)
 pop_by_city = city_burden_df.groupby('city_name').agg({
-    'POPLASTCENSUS': 'sum',
-    'POPLASTESTIMATE': 'sum',
-    'area_sq_miles': 'sum',
+    'POPLASTCENSUS': nan_sum,
+    'POPLASTESTIMATE': nan_sum,
+    'area_sq_miles': nan_sum,
     'County': 'first',
     'min_city_burden': 'first',
     'max_city_burden': 'first',

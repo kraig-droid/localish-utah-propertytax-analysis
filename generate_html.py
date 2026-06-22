@@ -14,7 +14,7 @@ html_template = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Utah City Tax Burden Comparison</title>
+    <title>Utah Local-Ish Tax Burden Comparison</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
@@ -301,12 +301,60 @@ html_template = """<!DOCTYPE html>
         table.hidden {
             display: none;
         }
+
+        .methodology {
+            margin-top: 32px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #0066cc;
+        }
+
+        .methodology h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: #333;
+        }
+
+        .methodology h3 {
+            font-size: 16px;
+            margin-top: 16px;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .methodology h4 {
+            font-size: 14px;
+            margin-top: 12px;
+            margin-bottom: 6px;
+            color: #444;
+            font-weight: 600;
+        }
+
+        .methodology p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .methodology ul {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #666;
+            margin-left: 20px;
+            margin-bottom: 12px;
+        }
+
+        .methodology li {
+            margin-bottom: 6px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Utah City Tax Burden Comparison</h1>
-        <div class="subtitle">Local-ish tax rate (total rate minus county and school rates) for cities with area ≥ 5 sq mi</div>
+        <h1>Utah Local-Ish Tax Burden Comparison</h1>
+        <div class="subtitle">Local-ish tax rate (total rate minus county, school, and library rates)</div>
         
         <div class="controls">
             <button class="show-all-btn" id="showAllBtn" onclick="showAllCities()">Show All</button>
@@ -343,10 +391,41 @@ html_template = """<!DOCTYPE html>
             <canvas id="rateChart" style="max-height: 400px;"></canvas>
         </div>
 
+        <div class="methodology">
+            <h2>Methodology</h2>
+            <h3>Tax Areas</h3>
+            <p>
+                Tax areas are geographic boundaries used by Utah's State Tax Commission to determine which taxing entities apply to a property. Each tax area has a unique code and extension number that identifies the combination of all taxing entities that levy taxes on properties within that area. These entities can include cities, counties, school districts, special service districts, water districts, sewer districts, and other local government entities.
+            </p>
+            <p>
+                <a href="https://files.tax.utah.gov/propertytax/tax-rates/area-rates/taxarearates2025.pdf" target="_blank">Source document: Utah Tax Area Rates 2025 (PDF)</a>
+            </p>
+            <h3>Local-ish Rate Calculation</h3>
+            <h4>Included in local-ish rates</h4>
+            <ul>
+                <li>City general fund taxes (including county-collected city-level general fund taxes for unincorporated areas)</li>
+                <li>Parks and recreation districts</li>
+                <li>Water and sewer districts</li>
+                <li>Fire protection districts</li>
+                <li>Special service districts</li>
+                <li>Other local government entities serving specific geographic areas</li>
+            </ul>
+            <h4>Excluded from local-ish rates</h4>
+            <ul>
+                <li>County rates - General county government taxes that apply county-wide</li>
+                <li>School district rates - Public school funding that applies across entire school districts</li>
+                <li>Library rates - County library system taxes</li>
+                <li>Public Improvement Districts (PID) - Special districts for infrastructure improvements</li>
+            </ul>
+            <h3>Max Local-ish Rate</h3>
+            <p>
+                For each city, this analysis identifies the tax area with the highest local-ish rate. This represents the maximum local tax burden that residents in that city might face, depending on their specific location within city boundaries. The actual rate for any given property will depend on which tax area it falls within.
+            </p>
+        </div>
+
         <div class="info">
-            * Ogden Valley City (incorporated 2024) is identified by OGDEN VALLEY PARKS SERVICE AREA. Population manually set to 8,000.
-            * Ogden Valley City excludes tax areas with POWDER MOUNTAIN WATER AND SEWER IMPROVEMENT DISTRICT or SUMMIT ROAD OVERLAY DISTRICT.
-            * Ogden Valley City (PROPOSED RATE) shows the tax burden if the city adopts the new rate of 0.000985 for city-level taxes.
+            * Ogden Valley City tax areas are those that have OGDEN VALLEY PARKS SERVICE AREA unless they have
+            POWDER MOUNTAIN WATER AND SEWER IMPROVEMENT DISTRICT or SUMMIT ROAD OVERLAY DISTRICT.
         </div>
     </div>
 
@@ -755,17 +834,17 @@ html_template = """<!DOCTYPE html>
             };
 
             window.rateChartInstance = new Chart(ctx, {
-                type: 'line',
+                type: 'bar',
                 data: {
                     labels: binLabels,
                     datasets: [{
                         label: 'Number of Cities',
                         data: bins,
-                        backgroundColor: 'rgba(0, 102, 204, 0.2)',
+                        backgroundColor: 'rgba(0, 102, 204, 0.5)',
                         borderColor: 'rgba(0, 102, 204, 1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4
+                        borderWidth: 1,
+                        barPercentage: 1.0,
+                        categoryPercentage: 1.0
                     }]
                 },
                 plugins: [ovcMarkerPlugin],

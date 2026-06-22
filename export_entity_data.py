@@ -30,6 +30,7 @@ for city in cities_data:
       AND TaxAreaExtension = {max_tax_area_ext}
       AND CAST(EntityCode AS INTEGER) / 1000 NOT IN (1, 2, 5)
       AND EntityCode != 3071
+      AND EntityName NOT LIKE '%LIBRAR%'
     ORDER BY FinalRate DESC
     """
     
@@ -52,6 +53,26 @@ if 'OGDEN VALLEY CITY' in entities_data:
     # Rename original to (2025 RATE)
     entities_data['OGDEN VALLEY CITY (2025 RATE)'] = ogden_valley_entities
     del entities_data['OGDEN VALLEY CITY']
+
+    # Add proposed variant with 0.000985 rate
+    # Replace 6090 (MUNICIPAL TYPE SERVICES, 0.000159) with 3199 (OGDEN VALLEY CITY, 0.000985)
+    proposed_entities = [
+        {
+            'entity_code': 3199,
+            'entity_name': 'OGDEN VALLEY CITY',
+            'rate': 0.000985
+        }
+    ]
+    # Add all other entities except 6090
+    for entity in ogden_valley_entities:
+        if entity['entity_code'] != 6090:
+            proposed_entities.append(entity)
+    # Sort by rate descending
+    proposed_entities.sort(key=lambda x: x['rate'], reverse=True)
+    entities_data['OGDEN VALLEY CITY (PROPOSED RATE)'] = proposed_entities
+elif 'OGDEN VALLEY CITY (2025 RATE)' in entities_data:
+    # Handle case where city_tax_burden.json was already regenerated
+    ogden_valley_entities = entities_data['OGDEN VALLEY CITY (2025 RATE)']
 
     # Add proposed variant with 0.000985 rate
     # Replace 6090 (MUNICIPAL TYPE SERVICES, 0.000159) with 3199 (OGDEN VALLEY CITY, 0.000985)
