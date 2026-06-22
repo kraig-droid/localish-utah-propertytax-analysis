@@ -264,7 +264,7 @@ html_template = """<!DOCTYPE html>
 
         .chart-container {
             display: none;
-            padding: 20px 0;
+            padding: 0;
         }
 
         .chart-container.visible {
@@ -304,7 +304,7 @@ html_template = """<!DOCTYPE html>
 
         .methodology {
             margin-top: 32px;
-            padding: 20px;
+            padding: 2px 0 2px 20px;
             background: #f8f9fa;
             border-radius: 6px;
             border-left: 4px solid #0066cc;
@@ -440,6 +440,10 @@ html_template = """<!DOCTYPE html>
             <h3>Max Local-ish Rate</h3>
             <p>
                 For each city, this analysis identifies the tax area with the highest local-ish rate. This represents the maximum local tax burden that residents in that city might face, depending on their specific location within city boundaries. The actual rate for any given property will depend on which tax area it falls within.
+            </p>
+            <h2>Source Code, Notes, and Original Data</h2>
+            <p>
+                See <a href="https://github.com/kraig-droid/localish-utah-propertytax-analysis">https://github.com/kraig-droid/localish-utah-propertytax-analysis</a>
             </p>
         </div>
 

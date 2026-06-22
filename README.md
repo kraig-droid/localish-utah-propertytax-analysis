@@ -19,7 +19,14 @@ This project processes official Utah State Tax Commission property tax data to:
 
 ## Usage
 
-1. Run `uv run jupyter nbconvert --to notebook --execute property_tax_comparisons.ipynb` to process the source data and create the SQLite database
-2. Run `uv run python export_city_data.py` to export city tax burden data
-3. Run `uv run python export_entity_data.py` to export entity breakdown data
-4. Run `uv run python generate_html.py` to generate the HTML visualization
+```bash
+uv run jupyter nbconvert --to notebook --execute property_tax_comparisons.ipynb  # process the source data and create the SQLite database
+uv run python export_city_data.py  # export city tax burden data
+uv run python export_entity_data.py  # export entity breakdown data
+uv run python generate_html.py  # generate the HTML visualization
+```
+
+## LLM Disclosure
+This project was
+- mostly built using Devin/Windsurf with me propmting frequently (models: SWE-1.6, Claude 4.5 Sonnet)
+- reviewed using Claude Code Opus 4.8 (high) and patched with Sonnet 4.6 (medium)
