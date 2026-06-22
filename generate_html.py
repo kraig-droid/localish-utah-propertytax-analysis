@@ -302,6 +302,10 @@ html_template = """<!DOCTYPE html>
             display: none;
         }
 
+        .hidden {
+            display: none;
+        }
+
         .methodology {
             margin-top: 32px;
             padding: 2px 0 2px 20px;
@@ -357,8 +361,6 @@ html_template = """<!DOCTYPE html>
         <div class="subtitle">Local-ish tax rate (total rate minus county, school, and library rates)</div>
         
         <div class="controls">
-            <button class="show-all-btn" id="showAllBtn" onclick="showAllCities()">Show All</button>
-            <span id="cityCount" style="margin-left: 20px; color: #666;"></span>
             <div class="view-toggle">
                 <button class="view-btn" id="tableViewBtn" onclick="switchView('table')">Table</button>
                 <button class="view-btn active" id="chartViewBtn" onclick="switchView('chart')">Chart</button>
@@ -385,13 +387,18 @@ html_template = """<!DOCTYPE html>
             </tbody>
         </table>
 
+        <div id="tableFooter" class="controls" style="margin-top: 20px;">
+            <button class="show-all-btn" id="showAllBtn" onclick="showAllCities()">Show All</button>
+            <span id="cityCount" style="margin-left: 20px; color: #666;"></span>
+        </div>
+
         <div class="chart-container visible" id="chartContainer">
             <canvas id="rateChart" style="max-height: 400px;"></canvas>
             <div class="stats-container" id="statsContainer">
             </div>
         </div>
 
-        <div class="methodology">
+        <div class="methodology" id="methodology">
             <h2>Methodology</h2>
             <h3>Tax Areas</h3>
             <p>
@@ -642,20 +649,23 @@ html_template = """<!DOCTYPE html>
             const chartViewBtn = document.getElementById('chartViewBtn');
             const dataTable = document.getElementById('dataTable');
             const chartContainer = document.getElementById('chartContainer');
-            const showAllBtn = document.getElementById('showAllBtn');
+            const tableFooter = document.getElementById('tableFooter');
+            const methodology = document.getElementById('methodology');
 
             if (view === 'table') {
                 tableViewBtn.classList.add('active');
                 chartViewBtn.classList.remove('active');
                 dataTable.classList.remove('hidden');
+                tableFooter.classList.remove('hidden');
                 chartContainer.classList.remove('visible');
-                showAllBtn.classList.remove('hidden');
+                methodology.classList.add('hidden');
             } else {
                 chartViewBtn.classList.add('active');
                 tableViewBtn.classList.remove('active');
                 dataTable.classList.add('hidden');
+                tableFooter.classList.add('hidden');
                 chartContainer.classList.add('visible');
-                showAllBtn.classList.add('hidden');
+                methodology.classList.remove('hidden');
                 renderChart();
             }
         }
@@ -939,6 +949,8 @@ html_template = """<!DOCTYPE html>
                 indicator.textContent = '▼';
             }
         }
+        // Hide table footer initially since chart is the default view
+        document.getElementById('tableFooter').classList.add('hidden');
         renderTable();
         // Chart is the default view, so render it on load.
         renderChart();
