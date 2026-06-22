@@ -9,5 +9,11 @@ wheels/
 # Virtual environments
 .venv
 
-junk/
+derived_data/
 reports/
+
+junk/
+
+# Jupyter notebook outputs
+.ipynb_checkpoints/
+*_executed.ipynb

@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utah Local-Ish Tax Burden Comparison</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 24px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .sort-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .sort-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .sort-btn.active {
+            background: #0066cc;
+            color: white;
+            border-color: #0066cc;
+        }
+
+        .show-all-btn {
+            padding: 8px 16px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .show-all-btn:hover {
+            background: #218838;
+        }
+
+        .show-all-btn.hidden {
+            display: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+        }
+
+        th {
+            text-align: left;
+            padding: 6px 12px;
+            border-bottom: 2px solid #ddd;
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        th:hover {
+            background: #f5f5f5;
+        }
+
+        td {
+            padding: 4px 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .ogden-valley {
+            background: #fff3cd !important;
+            border-left: 4px solid #ffc107;
+        }
+
+        .ogden-valley:hover {
+            background: #ffe69c !important;
+        }
+
+        .ogden-valley-proposed {
+            background: #d1ecf1 !important;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .ogden-valley-proposed:hover {
+            background: #bee5eb !important;
+        }
+
+        .expand-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0 8px;
+            color: #666;
+            transition: transform 0.2s;
+        }
+
+        .expand-btn:hover {
+            color: #333;
+        }
+
+        .expand-btn.expanded {
+            transform: rotate(90deg);
+        }
+
+        .entity-row {
+            display: none;
+            background: #fafafa;
+        }
+
+        .entity-row.visible {
+            display: table-row;
+        }
+
+        .entity-cell {
+            padding: 3px 12px 3px 48px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .entity-name {
+            font-weight: 500;
+        }
+
+        .entity-rate {
+            font-family: 'Courier New', monospace;
+        }
+
+        .rate-cell {
+            font-family: 'Courier New', monospace;
+        }
+
+        .numeric {
+            text-align: right;
+        }
+
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+
+        .sortable:hover {
+            background-color: #f5f5f5;
+        }
+
+        .sortable.sorted {
+            background-color: #e8f4fd;
+            font-weight: 600;
+        }
+
+        .sort-indicator {
+            margin-left: 5px;
+            opacity: 0.3;
+        }
+
+        .sortable.sorted .sort-indicator {
+            opacity: 1;
+        }
+
+        .hidden-row {
+            display: none;
+        }
+
+        .info {
+            font-size: 12px;
+            color: #888;
+            margin-top: 16px;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 8px;
+            margin-left: 20px;
+        }
+
+        .view-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .view-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .view-btn.active {
+            background: #0066cc;
+            color: white;
+            border-color: #0066cc;
+        }
+
+        .chart-container {
+            display: none;
+            padding: 20px 0;
+        }
+
+        .chart-container.visible {
+            display: block;
+        }
+
+        .stats-container {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .stat-item {
+            flex: 0 0 auto;
+            min-width: 80px;
+            margin-right: 16px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        table.hidden {
+            display: none;
+        }
+
+        .methodology {
+            margin-top: 32px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #0066cc;
+        }
+
+        .methodology h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: #333;
+        }
+
+        .methodology h3 {
+            font-size: 16px;
+            margin-top: 16px;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .methodology h4 {
+            font-size: 14px;
+            margin-top: 12px;
+            margin-bottom: 6px;
+            color: #444;
+            font-weight: 600;
+        }
+
+        .methodology p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .methodology ul {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #666;
+            margin-left: 20px;
+            margin-bottom: 12px;
+        }
+
+        .methodology li {
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Utah Local-Ish Tax Burden Comparison</h1>
+        <div class="subtitle">Local-ish tax rate (total rate minus county, school, and library rates)</div>
+        
+        <div class="controls">
+            <button class="show-all-btn" id="showAllBtn" onclick="showAllCities()">Show All</button>
+            <span id="cityCount" style="margin-left: 20px; color: #666;"></span>
+            <div class="view-toggle">
+                <button class="view-btn" id="tableViewBtn" onclick="switchView('table')">Table</button>
+                <button class="view-btn active" id="chartViewBtn" onclick="switchView('chart')">Chart</button>
+            </div>
+            <label style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="hideSmallCities" checked onchange="toggleSmallCities()">
+                <span>hide cities under 5 sq mi</span>
+            </label>
+        </div>
+
+        <table id="dataTable" class="hidden">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>#</th>
+                    <th class="sortable" data-sort="city_name" onclick="sortBy('city_name')">City <span class="sort-indicator"></span></th>
+                    <th>County</th>
+                    <th class="numeric sortable" data-sort="max_local_rate" onclick="sortBy('max_local_rate')">Max Local-ish Rate <span class="sort-indicator"></span></th>
+                    <th class="numeric sortable" data-sort="population" onclick="sortBy('population')">Population <span class="sort-indicator"></span></th>
+                    <th class="numeric sortable" data-sort="area_sq_miles" onclick="sortBy('area_sq_miles')">Area (sq mi) <span class="sort-indicator"></span></th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+            </tbody>
+        </table>
+
+        <div class="chart-container visible" id="chartContainer">
+            <canvas id="rateChart" style="max-height: 400px;"></canvas>
+            <div class="stats-container" id="statsContainer">
+            </div>
+        </div>
+
+        <div class="methodology">
+            <h2>Methodology</h2>
+            <h3>Tax Areas</h3>
+            <p>
+                Tax areas are geographic boundaries used by Utah's State Tax Commission to determine which taxing entities apply to a property. Each tax area has a unique code and extension number that identifies the combination of all taxing entities that levy taxes on properties within that area. These entities can include cities, counties, school districts, special service districts, water districts, sewer districts, and other local government entities.
+            </p>
+            <p>
+                <strong>Example: Riverdale (Weber County)</strong><br>
+                Tax area: <strong>583 - 0000</strong><br>
+            </p>
+            <ul>
+                <li>Riverdale: <em>0.001414</em> (3080)</li>
+                <li>Central Weber Sewer Improvement District: <em>0.000540</em> (4010)</li>
+                <li>Weber Basin Water Conservancy District: <em>0.000191</em> (4005)</li>
+                <li>Weber Area Dispatch 911 and Emergency Services District: <em>0.000163</em> (4320)</li>
+                <li>Weber County Mosquito Abatement District: <em>0.000064</em> (4080)</li>
+                <li>Roy Water Conservancy Subdistrict: <em>0.000044</em> (4130)</li>
+            </ul>
+            <p>
+                <a href="https://files.tax.utah.gov/propertytax/tax-rates/area-rates/taxarearates2025.pdf" target="_blank">Source document: Utah Tax Area Rates 2025 (PDF)</a>
+            </p>
+            <h3>Local-ish Rate Calculation</h3>
+            <h4>Included in local-ish rates</h4>
+            <ul>
+                <li>City general fund taxes (including county-collected city-level general fund taxes for unincorporated areas)</li>
+                <li>Parks and recreation districts</li>
+                <li>Water and sewer districts</li>
+                <li>Fire protection districts</li>
+                <li>Special service districts</li>
+                <li>Other local government entities serving specific geographic areas</li>
+            </ul>
+            <h4>Excluded from local-ish rates</h4>
+            <ul>
+                <li>County rates - General county government taxes that apply county-wide</li>
+                <li>School district rates - Public school funding that applies across entire school districts</li>
+                <li>Library rates - County library system taxes</li>
+                <li>Public Improvement Districts (PID) - Special districts for infrastructure improvements</li>
+            </ul>
+            <h3>Max Local-ish Rate</h3>
+            <p>
+                For each city, this analysis identifies the tax area with the highest local-ish rate. This represents the maximum local tax burden that residents in that city might face, depending on their specific location within city boundaries. The actual rate for any given property will depend on which tax area it falls within.
+            </p>
+        </div>
+
+        <div class="info">
+            * Ogden Valley City tax areas are those that have OGDEN VALLEY PARKS SERVICE AREA unless they have
+            POWDER MOUNTAIN WATER AND SEWER IMPROVEMENT DISTRICT or SUMMIT ROAD OVERLAY DISTRICT.
+        </div>
+    </div>
+
+    <script>
+        // Embedded data
+        const citiesData = [{"city_name": "EAST CARBON - SUNNYSIDE", "county": "CARBON", "min_local_rate": 0.008875000000000001, "max_local_rate": 0.008875000000000001, "population": 1567, "area_sq_miles": 18.98, "max_tax_area": "007", "max_tax_area_ext": 0}, {"city_name": "LEEDS", "county": "WASHINGTON", "min_local_rate": 0.001834, "max_local_rate": 0.008367, "population": 871, "area_sq_miles": 9.95, "max_tax_area": "054", "max_tax_area_ext": 0}, {"city_name": "MAGNA CITY", "county": "SALT LAKE", "min_local_rate": 0.004296, "max_local_rate": 0.006006, "population": null, "area_sq_miles": 65.33, "max_tax_area": "ABY", "max_tax_area_ext": 0}, {"city_name": "CITY OF KEARNS", "county": "SALT LAKE", "min_local_rate": 0.005555, "max_local_rate": 0.005933, "population": 37249, "area_sq_miles": 8.05, "max_tax_area": "ABR", "max_tax_area_ext": 0}, {"city_name": "SALT LAKE CITY", "county": "SALT LAKE", "min_local_rate": 0.0035800000000000003, "max_local_rate": 0.00539, "population": 204657, "area_sq_miles": 196.7, "max_tax_area": "13P", "max_tax_area_ext": 0}, {"city_name": "TOWN OF COPPERTON ", "county": "SALT LAKE", "min_local_rate": 0.0043040000000000005, "max_local_rate": 0.0052770000000000004, "population": 840, "area_sq_miles": 0.54, "max_tax_area": "ABS", "max_tax_area_ext": 0}, {"city_name": "WHITE CITY ", "county": "SALT LAKE", "min_local_rate": 0.004717, "max_local_rate": 0.005057, "population": 5598, "area_sq_miles": 1.52, "max_tax_area": "ACF", "max_tax_area_ext": 0}, {"city_name": "EMIGRATION CANYON", "county": "SALT LAKE", "min_local_rate": 0.004296, "max_local_rate": 0.004803, "population": 1484, "area_sq_miles": 31.81, "max_tax_area": "ABV", "max_tax_area_ext": 0}, {"city_name": "WEST VALLEY CITY", "county": "SALT LAKE", "min_local_rate": 0.003097, "max_local_rate": 0.004757, "population": 136650, "area_sq_miles": 62.37, "max_tax_area": "29B", "max_tax_area_ext": 0}, {"city_name": "TAYLORSVILLE CITY", "county": "SALT LAKE", "min_local_rate": 0.003291, "max_local_rate": 0.004465, "population": 57879, "area_sq_miles": 18.87, "max_tax_area": "064", "max_tax_area_ext": 0}, {"city_name": "BRIGHTON", "county": "SALT LAKE", "min_local_rate": 0.0043040000000000005, "max_local_rate": 0.0043040000000000005, "population": 441, "area_sq_miles": 27.58, "max_tax_area": "ADJ", "max_tax_area_ext": 0}, {"city_name": "VINEYARD", "county": "UTAH", "min_local_rate": 0.004196, "max_local_rate": 0.004207, "population": 14535, "area_sq_miles": 10.98, "max_tax_area": "096", "max_tax_area_ext": 1}, {"city_name": "MIDVALE", "county": "SALT LAKE", "min_local_rate": 0.003225, "max_local_rate": 0.003966, "population": 35637, "area_sq_miles": 10.17, "max_tax_area": "30A", "max_tax_area_ext": 0}, {"city_name": "MILLCREEK", "county": "SALT LAKE", "min_local_rate": 0.003317, "max_local_rate": 0.003943, "population": 63034, "area_sq_miles": 22.5, "max_tax_area": "ACJ", "max_tax_area_ext": 0}, {"city_name": "HERRIMAN TOWN", "county": "SALT LAKE", "min_local_rate": 0.0035600000000000002, "max_local_rate": 0.0039000000000000003, "population": 59179, "area_sq_miles": 40.01, "max_tax_area": "070", "max_tax_area_ext": 9902}, {"city_name": "WELLINGTON", "county": "CARBON", "min_local_rate": 0.003785, "max_local_rate": 0.003785, "population": 1625, "area_sq_miles": 8.68, "max_tax_area": "093", "max_tax_area_ext": 9502}, {"city_name": "SOUTH OGDEN", "county": "WEBER", "min_local_rate": 0.002873, "max_local_rate": 0.003781, "population": 17716, "area_sq_miles": 6.91, "max_tax_area": "075", "max_tax_area_ext": 0}, {"city_name": "HARRISVILLE", "county": "WEBER", "min_local_rate": 0.003588, "max_local_rate": 0.00377, "population": 6876, "area_sq_miles": 5.29, "max_tax_area": "012", "max_tax_area_ext": 0}, {"city_name": "OGDEN CITY", "county": "WEBER", "min_local_rate": 0.002809, "max_local_rate": 0.0037170000000000003, "population": 86825, "area_sq_miles": 48.64, "max_tax_area": "426", "max_tax_area_ext": 0}, {"city_name": "NORTH OGDEN CITY", "county": "WEBER", "min_local_rate": 0.002818, "max_local_rate": 0.00354, "population": 21855, "area_sq_miles": 13.63, "max_tax_area": "450", "max_tax_area_ext": 0}, {"city_name": "ELMO", "county": "EMERY", "min_local_rate": 0.0035210000000000003, "max_local_rate": 0.0035210000000000003, "population": 415, "area_sq_miles": 1.23, "max_tax_area": "003", "max_tax_area_ext": 0}, {"city_name": "SOUTH SALT LAKE CITY", "county": "SALT LAKE", "min_local_rate": 0.003016, "max_local_rate": 0.003519, "population": 26003, "area_sq_miles": 12.09, "max_tax_area": "14B", "max_tax_area_ext": 0}, {"city_name": "WOODLAND HILLS", "county": "UTAH", "min_local_rate": 0.003493, "max_local_rate": 0.003493, "population": 1553, "area_sq_miles": 4.38, "max_tax_area": "182", "max_tax_area_ext": 0}, {"city_name": "CLEARFIELD", "county": "DAVIS", "min_local_rate": 0.003477, "max_local_rate": 0.003477, "population": 34062, "area_sq_miles": 13.61, "max_tax_area": "013", "max_tax_area_ext": 0}, {"city_name": "EMERY", "county": "EMERY", "min_local_rate": 0.0013440000000000001, "max_local_rate": 0.0034230000000000003, "population": 315, "area_sq_miles": 2.03, "max_tax_area": "004", "max_tax_area_ext": 0}, {"city_name": "MURRAY", "county": "SALT LAKE", "min_local_rate": 0.002104, "max_local_rate": 0.003375, "population": 49463, "area_sq_miles": 21.5, "max_tax_area": "90A", "max_tax_area_ext": 0}, {"city_name": "WEST JORDAN CITY", "county": "SALT LAKE", "min_local_rate": 0.001736, "max_local_rate": 0.003365, "population": 116664, "area_sq_miles": 57.05, "max_tax_area": "24Q", "max_tax_area_ext": 0}, {"city_name": "FERRON", "county": "EMERY", "min_local_rate": 0.001278, "max_local_rate": 0.003357, "population": 1514, "area_sq_miles": 3.91, "max_tax_area": "005", "max_tax_area_ext": 0}, {"city_name": "ORANGEVILLE", "county": "EMERY", "min_local_rate": 0.001267, "max_local_rate": 0.003346, "population": 1258, "area_sq_miles": 2.37, "max_tax_area": "008", "max_tax_area_ext": 0}, {"city_name": "CASTLE DALE", "county": "EMERY", "min_local_rate": 0.00125, "max_local_rate": 0.0033290000000000004, "population": 1530, "area_sq_miles": 3.77, "max_tax_area": "001", "max_tax_area_ext": 0}, {"city_name": "TREMONTON", "county": "BOX ELDER", "min_local_rate": 0.003194, "max_local_rate": 0.003288, "population": 11840, "area_sq_miles": 15.57, "max_tax_area": "151", "max_tax_area_ext": 9501}, {"city_name": "SUNSET", "county": "DAVIS", "min_local_rate": 0.003281, "max_local_rate": 0.003281, "population": 5372, "area_sq_miles": 2.59, "max_tax_area": "051", "max_tax_area_ext": 0}, {"city_name": "GARLAND", "county": "BOX ELDER", "min_local_rate": 0.003117, "max_local_rate": 0.0032110000000000003, "population": 2613, "area_sq_miles": 3.37, "max_tax_area": "113", "max_tax_area_ext": 9500}, {"city_name": "COTTONWOOD HEIGHTS", "county": "SALT LAKE", "min_local_rate": 0.00208, "max_local_rate": 0.003188, "population": 32420, "area_sq_miles": 16.43, "max_tax_area": "AAJ", "max_tax_area_ext": 0}, {"city_name": "HUNTINGTON", "county": "EMERY", "min_local_rate": 0.001108, "max_local_rate": 0.003187, "population": 1970, "area_sq_miles": 3.78, "max_tax_area": "007", "max_tax_area_ext": 1}, {"city_name": "MONTICELLO", "county": "SAN JUAN", "min_local_rate": 0.0031839999999999998, "max_local_rate": 0.0031839999999999998, "population": 1752, "area_sq_miles": 5.38, "max_tax_area": "004", "max_tax_area_ext": 0}, {"city_name": "WEST POINT", "county": "DAVIS", "min_local_rate": 0.002669, "max_local_rate": 0.003183, "population": 11892, "area_sq_miles": 13.5, "max_tax_area": "064", "max_tax_area_ext": 0}, {"city_name": "WALLSBURG", "county": "WASATCH", "min_local_rate": 0.003151, "max_local_rate": 0.003151, "population": 297, "area_sq_miles": 1.09, "max_tax_area": "010", "max_tax_area_ext": 0}, {"city_name": "BIG WATER", "county": "KANE", "min_local_rate": 0.0031450000000000002, "max_local_rate": 0.0031450000000000002, "population": 487, "area_sq_miles": 9.43, "max_tax_area": "010", "max_tax_area_ext": 0}, {"city_name": "WOODS CROSS CITY", "county": "DAVIS", "min_local_rate": 0.002964, "max_local_rate": 0.003143, "population": 11487, "area_sq_miles": 6.72, "max_tax_area": "072", "max_tax_area_ext": 0}, {"city_name": "RIVERTON", "county": "SALT LAKE", "min_local_rate": 0.003126, "max_local_rate": 0.003126, "population": 44599, "area_sq_miles": 21.83, "max_tax_area": "042", "max_tax_area_ext": 0}, {"city_name": "PLEASANT VIEW", "county": "WEBER", "min_local_rate": 0.002281, "max_local_rate": 0.003003, "population": 11258, "area_sq_miles": 12.44, "max_tax_area": "065", "max_tax_area_ext": 0}, {"city_name": "EAGLE MOUNTAIN", "county": "UTAH", "min_local_rate": 0.002584, "max_local_rate": 0.003001, "population": 54149, "area_sq_miles": 88.04, "max_tax_area": "038", "max_tax_area_ext": 8}, {"city_name": "WEST BOUNTIFUL", "county": "DAVIS", "min_local_rate": 0.00294, "max_local_rate": 0.002999, "population": 5888, "area_sq_miles": 5.83, "max_tax_area": "058", "max_tax_area_ext": 0}, {"city_name": "INTERLAKEN TOWN", "county": "WASATCH", "min_local_rate": 0.0029779999999999997, "max_local_rate": 0.0029779999999999997, "population": 166, "area_sq_miles": 0.39, "max_tax_area": "028", "max_tax_area_ext": 0}, {"city_name": "ALTA", "county": "SALT LAKE", "min_local_rate": 0.002892, "max_local_rate": 0.002951, "population": 227, "area_sq_miles": 7.86, "max_tax_area": "40I", "max_tax_area_ext": 0}, {"city_name": "CLEVELAND", "county": "EMERY", "min_local_rate": 0.000861, "max_local_rate": 0.00294, "population": 510, "area_sq_miles": 1.5, "max_tax_area": "002", "max_tax_area_ext": 0}, {"city_name": "CLINTON", "county": "DAVIS", "min_local_rate": 0.002398, "max_local_rate": 0.002912, "population": 23538, "area_sq_miles": 10.52, "max_tax_area": "018", "max_tax_area_ext": 0}, {"city_name": "TOOELE", "county": "TOOELE", "min_local_rate": 0.002476, "max_local_rate": 0.002894, "population": 38588, "area_sq_miles": 41.93, "max_tax_area": "023", "max_tax_area_ext": 0}, {"city_name": "STOCKTON", "county": "TOOELE", "min_local_rate": 0.002833, "max_local_rate": 0.002833, "population": 623, "area_sq_miles": 2.93, "max_tax_area": "004", "max_tax_area_ext": 0}, {"city_name": "CENTERVILLE", "county": "DAVIS", "min_local_rate": 0.002427, "max_local_rate": 0.0028309999999999997, "population": 16502, "area_sq_miles": 10.52, "max_tax_area": "009", "max_tax_area_ext": 0}, {"city_name": "WENDOVER", "county": "TOOELE", "min_local_rate": 0.002826, "max_local_rate": 0.002826, "population": 1135, "area_sq_miles": 15.56, "max_tax_area": "003", "max_tax_area_ext": 0}, {"city_name": "MOAB CITY", "county": "GRAND", "min_local_rate": 0.0028250000000000003, "max_local_rate": 0.0028250000000000003, "population": 5321, "area_sq_miles": 7.9, "max_tax_area": "001", "max_tax_area_ext": 0}, {"city_name": "BALLARD", "county": "UINTAH", "min_local_rate": 0.002402, "max_local_rate": 0.002779, "population": 1191, "area_sq_miles": 24.01, "max_tax_area": "012", "max_tax_area_ext": 0}, {"city_name": "BLANDING", "county": "SAN JUAN", "min_local_rate": 0.002772, "max_local_rate": 0.002772, "population": 3229, "area_sq_miles": 21.13, "max_tax_area": "005", "max_tax_area_ext": 0}, {"city_name": "SANDY CITY", "county": "SALT LAKE", "min_local_rate": 0.001637, "max_local_rate": 0.002728, "population": 93022, "area_sq_miles": 42.6, "max_tax_area": "ADT", "max_tax_area_ext": 0}, {"city_name": "CLAWSON", "county": "EMERY", "min_local_rate": 0.0006410000000000001, "max_local_rate": 0.00272, "population": 170, "area_sq_miles": 1.67, "max_tax_area": "030", "max_tax_area_ext": 0}, {"city_name": "GREEN RIVER", "county": "EMERY", "min_local_rate": 0.002706, "max_local_rate": 0.002706, "population": 876, "area_sq_miles": 45.19, "max_tax_area": "006", "max_tax_area_ext": 9505}, {"city_name": "HELPER CITY", "county": "CARBON", "min_local_rate": 0.002704, "max_local_rate": 0.002704, "population": 2131, "area_sq_miles": 3.06, "max_tax_area": "002", "max_tax_area_ext": 0}, {"city_name": "SYRACUSE", "county": "DAVIS", "min_local_rate": 0.002363, "max_local_rate": 0.002683, "population": 35561, "area_sq_miles": 18.34, "max_tax_area": "054", "max_tax_area_ext": 8155}, {"city_name": "HOLLADAY CITY", "county": "SALT LAKE", "min_local_rate": 0.001905, "max_local_rate": 0.002673, "population": 30816, "area_sq_miles": 14.77, "max_tax_area": "084", "max_tax_area_ext": 0}, {"city_name": "COALVILLE", "county": "SUMMIT", "min_local_rate": 0.002666, "max_local_rate": 0.002666, "population": 1524, "area_sq_miles": 11.6, "max_tax_area": "001", "max_tax_area_ext": 0}, {"city_name": "WASHINGTON TERRACE", "county": "WEBER", "min_local_rate": 0.002625, "max_local_rate": 0.002625, "population": 9160, "area_sq_miles": 3.55, "max_tax_area": "024", "max_tax_area_ext": 0}, {"city_name": "ROY CITY", "county": "WEBER", "min_local_rate": 0.0020800000000000003, "max_local_rate": 0.00262, "population": 38785, "area_sq_miles": 14.42, "max_tax_area": "086", "max_tax_area_ext": 0}, {"city_name": "SALINA", "county": "SEVIER", "min_local_rate": 0.002616, "max_local_rate": 0.002616, "population": 2565, "area_sq_miles": 9.73, "max_tax_area": "024", "max_tax_area_ext": 9500}, {"city_name": "ROCKVILLE", "county": "WASHINGTON", "min_local_rate": 0.002591, "max_local_rate": 0.002591, "population": 224, "area_sq_miles": 13.35, "max_tax_area": "018", "max_tax_area_ext": 0}, {"city_name": "OGDEN VALLEY CITY (PROPOSED RATE)", "county": "WEBER", "min_local_rate": 0.002547, "max_local_rate": 0.00258, "population": 8000, "area_sq_miles": 112.13, "max_tax_area": "028", "max_tax_area_ext": 0, "proposed": true}, {"city_name": "UINTAH", "county": "WEBER", "min_local_rate": 0.002039, "max_local_rate": 0.002579, "population": 1422, "area_sq_miles": 2.22, "max_tax_area": "299", "max_tax_area_ext": 0}, {"city_name": "MILFORD", "county": "BEAVER", "min_local_rate": 0.002564, "max_local_rate": 0.002564, "population": 1454, "area_sq_miles": 3.45, "max_tax_area": "005", "max_tax_area_ext": 9500}, {"city_name": "HOOPER", "county": "WEBER", "min_local_rate": 0.001593, "max_local_rate": 0.002562, "population": 9300, "area_sq_miles": 155.37, "max_tax_area": "404", "max_tax_area_ext": 0}, {"city_name": "FARR WEST CITY", "county": "WEBER", "min_local_rate": 0.001865, "max_local_rate": 0.002553, "population": 8027, "area_sq_miles": 10.47, "max_tax_area": "479", "max_tax_area_ext": 0}, {"city_name": "CITY OF NORTH SALT LAKE", "county": "DAVIS", "min_local_rate": 0.002427, "max_local_rate": 0.002547, "population": 22537, "area_sq_miles": 15.2, "max_tax_area": "045", "max_tax_area_ext": 0}, {"city_name": "BOUNTIFUL", "county": "DAVIS", "min_local_rate": 0.002361, "max_local_rate": 0.00254, "population": 44481, "area_sq_miles": 23.14, "max_tax_area": "004", "max_tax_area_ext": 0}, {"city_name": "DRAPER", "county": "UTAH", "min_local_rate": 0.001347, "max_local_rate": 0.002529, "population": 101462, "area_sq_miles": 49.14, "max_tax_area": "019", "max_tax_area_ext": 0}, {"city_name": "DRAPER CITY", "county": "SALT LAKE", "min_local_rate": 0.001684, "max_local_rate": 0.002526, "population": 101462, "area_sq_miles": 49.14, "max_tax_area": "54B", "max_tax_area_ext": 0}, {"city_name": "FRUIT HEIGHTS", "county": "DAVIS", "min_local_rate": 0.002205, "max_local_rate": 0.002499, "population": 5971, "area_sq_miles": 4.06, "max_tax_area": "029", "max_tax_area_ext": 0}, {"city_name": "FARMINGTON", "county": "DAVIS", "min_local_rate": 0.002148, "max_local_rate": 0.002442, "population": 25660, "area_sq_miles": 17.64, "max_tax_area": "724", "max_tax_area_ext": 9400}, {"city_name": "PERRY CITY", "county": "BOX ELDER", "min_local_rate": 0.0021980000000000003, "max_local_rate": 0.002439, "population": 5828, "area_sq_miles": 14.42, "max_tax_area": "162", "max_tax_area_ext": 0}, {"city_name": "ROOSEVELT", "county": "DUCHESNE", "min_local_rate": 0.002422, "max_local_rate": 0.002422, "population": 7097, "area_sq_miles": 12.43, "max_tax_area": "014", "max_tax_area_ext": 1}, {"city_name": "RIVERDALE", "county": "WEBER", "min_local_rate": 0.002152, "max_local_rate": 0.0024159999999999997, "population": 9285, "area_sq_miles": 8.14, "max_tax_area": "583", "max_tax_area_ext": 0}, {"city_name": "TOQUERVILLE CITY", "county": "WASHINGTON", "min_local_rate": 0.002378, "max_local_rate": 0.002378, "population": 1960, "area_sq_miles": 35.09, "max_tax_area": "011", "max_tax_area_ext": 1}, {"city_name": "ALTON", "county": "KANE", "min_local_rate": 0.002377, "max_local_rate": 0.002377, "population": 117, "area_sq_miles": 3.69, "max_tax_area": "005", "max_tax_area_ext": 0}, {"city_name": "SOUTH WEBER", "county": "DAVIS", "min_local_rate": 0.001816, "max_local_rate": 0.002356, "population": 8124, "area_sq_miles": 8.33, "max_tax_area": "046", "max_tax_area_ext": 0}, {"city_name": "MARRIOTT-SLATERVILLE CITY", "county": "WEBER", "min_local_rate": 0.001646, "max_local_rate": 0.002353, "population": 2206, "area_sq_miles": 13.44, "max_tax_area": "575", "max_tax_area_ext": 0}, {"city_name": "SANTAQUIN CITY", "county": "JUAB", "min_local_rate": 0.0023510000000000002, "max_local_rate": 0.0023510000000000002, "population": 33796, "area_sq_miles": 18.05, "max_tax_area": "014", "max_tax_area_ext": 0}, {"city_name": "BRIAN HEAD CITY", "county": "IRON", "min_local_rate": 0.002328, "max_local_rate": 0.002328, "population": 155, "area_sq_miles": 10.39, "max_tax_area": "005", "max_tax_area_ext": 0}, {"city_name": "WEST HAVEN", "county": "WEBER", "min_local_rate": 0.001501, "max_local_rate": 0.002299, "population": 22395, "area_sq_miles": 19.07, "max_tax_area": "532", "max_tax_area_ext": 0}, {"city_name": "LA VERKIN CITY", "county": "WASHINGTON", "min_local_rate": 0.002293, "max_local_rate": 0.002293, "population": 4531, "area_sq_miles": 21.56, "max_tax_area": "005", "max_tax_area_ext": 0}, {"city_name": "MANTUA TOWN", "county": "BOX ELDER", "min_local_rate": 0.002273, "max_local_rate": 0.002273, "population": 1256, "area_sq_miles": 10.11, "max_tax_area": "119", "max_tax_area_ext": 0}, {"city_name": "SOUTH JORDAN", "county": "SALT LAKE", "min_local_rate": 0.0017209999999999999, "max_local_rate": 0.002262, "population": 83513, "area_sq_miles": 44.8, "max_tax_area": "38C", "max_tax_area_ext": 0}, {"city_name": "LAKE POINT", "county": "TOOELE", "min_local_rate": 0.001988, "max_local_rate": 0.002252, "population": null, "area_sq_miles": 7.98, "max_tax_area": "055", "max_tax_area_ext": 0}, {"city_name": "DUTCH JOHN", "county": "DAGGETT", "min_local_rate": 0.002239, "max_local_rate": 0.002239, "population": 149, "area_sq_miles": 11.03, "max_tax_area": "007", "max_tax_area_ext": 0}, {"city_name": "KAYSVILLE", "county": "DAVIS", "min_local_rate": 0.0019429999999999998, "max_local_rate": 0.002237, "population": 32761, "area_sq_miles": 18.74, "max_tax_area": "035", "max_tax_area_ext": 0}, {"city_name": "HURRICANE CITY", "county": "WASHINGTON", "min_local_rate": 0.002232, "max_local_rate": 0.002232, "population": 23077, "area_sq_miles": 84.26, "max_tax_area": "003", "max_tax_area_ext": 2}, {"city_name": "BRIGHAM CITY", "county": "BOX ELDER", "min_local_rate": 0.002082, "max_local_rate": 0.002228, "population": 19963, "area_sq_miles": 47.04, "max_tax_area": "163", "max_tax_area_ext": 0}, {"city_name": "PAROWAN", "county": "IRON", "min_local_rate": 0.002191, "max_local_rate": 0.002191, "population": 3171, "area_sq_miles": 11.99, "max_tax_area": "001", "max_tax_area_ext": 0}, {"city_name": "WASHINGTON CITY", "county": "WASHINGTON", "min_local_rate": 0.001167, "max_local_rate": 0.002188, "population": 32709, "area_sq_miles": 67.92, "max_tax_area": "041", "max_tax_area_ext": 5081}, {"city_name": "HUNTSVILLE", "county": "WEBER", "min_local_rate": 0.002111, "max_local_rate": 0.002111, "population": 593, "area_sq_miles": 5.53, "max_tax_area": "035", "max_tax_area_ext": 0}, {"city_name": "MINERSVILLE", "county": "BEAVER", "min_local_rate": 0.002107, "max_local_rate": 0.002107, "population": 855, "area_sq_miles": 3.54, "max_tax_area": "004", "max_tax_area_ext": 0}, {"city_name": "WILLARD CITY", "county": "BOX ELDER", "min_local_rate": 0.001901, "max_local_rate": 0.002092, "population": 2224, "area_sq_miles": 13.31, "max_tax_area": "134", "max_tax_area_ext": 0}, {"city_name": "TABIONA", "county": "DUCHESNE", "min_local_rate": 0.002091, "max_local_rate": 0.002091, "population": 153, "area_sq_miles": 0.24, "max_tax_area": "005", "max_tax_area_ext": 0}, {"city_name": "FRANCIS", "county": "SUMMIT", "min_local_rate": 0.001877, "max_local_rate": 0.002086, "population": 1722, "area_sq_miles": 7.02, "max_tax_area": "002", "max_tax_area_ext": 0}, {"city_name": "PROVO", "county": "UTAH", "min_local_rate": 0.002078, "max_local_rate": 0.002078, "population": 113523, "area_sq_miles": 76.88, "max_tax_area": "110", "max_tax_area_ext": 16}, {"city_name": "PRICE", "county": "CARBON", "min_local_rate": 0.002075, "max_local_rate": 0.002075, "population": 8262, "area_sq_miles": 8.49, "max_tax_area": "001", "max_tax_area_ext": 9900}, {"city_name": "DELTA CITY", "county": "MILLARD", "min_local_rate": 0.002068, "max_local_rate": 0.002068, "population": 3724, "area_sq_miles": 14.64, "max_tax_area": "007", "max_tax_area_ext": 0}, {"city_name": "LYNNDYL", "county": "MILLARD", "min_local_rate": 0.0020599999999999998, "max_local_rate": 0.0020599999999999998, "population": 124, "area_sq_miles": 5.27, "max_tax_area": "010", "max_tax_area_ext": 0}, {"city_name": "KANAB CITY", "county": "KANE", "min_local_rate": 0.002054, "max_local_rate": 0.002054, "population": 5131, "area_sq_miles": 24.47, "max_tax_area": "002", "max_tax_area_ext": 1}, {"city_name": "ERDA", "county": "TOOELE", "min_local_rate": 0.001748, "max_local_rate": 0.00204, "population": null, "area_sq_miles": 70.55, "max_tax_area": "049", "max_tax_area_ext": 0}, {"city_name": "ROCKY RIDGE TOWN", "county": "JUAB", "min_local_rate": 0.001977, "max_local_rate": 0.001977, "population": 951, "area_sq_miles": 2.88, "max_tax_area": "013", "max_tax_area_ext": 0}, {"city_name": "MYTON", "county": "DUCHESNE", "min_local_rate": 0.001973, "max_local_rate": 0.001973, "population": 560, "area_sq_miles": 1.74, "max_tax_area": "003", "max_tax_area_ext": 0}, {"city_name": "CHARLESTON", "county": "WASATCH", "min_local_rate": 0.001954, "max_local_rate": 0.001971, "population": 421, "area_sq_miles": 5.81, "max_tax_area": "001", "max_tax_area_ext": 0}, {"city_name": "PARK CITY", "county": "SUMMIT", "min_local_rate": 0.001277, "max_local_rate": 0.001961, "population": 33496, "area_sq_miles": 77.51, "max_tax_area": "071", "max_tax_area_ext": 0}, {"city_name": "AMERICAN FORK", "county": "UTAH", "min_local_rate": 0.001932, "max_local_rate": 0.001943, "population": 37268, "area_sq_miles": 19.76, "max_tax_area": "060", "max_tax_area_ext": 9901}, {"city_name": "CEDAR CITY", "county": "IRON", "min_local_rate": 0.0019320000000000001, "max_local_rate": 0.0019320000000000001, "population": 38692, "area_sq_miles": 58.42, "max_tax_area": "006", "max_tax_area_ext": 9901}, {"city_name": "WOODRUFF", "county": "RICH", "min_local_rate": 0.001914, "max_local_rate": 0.001914, "population": 177, "area_sq_miles": 1.28, "max_tax_area": "011", "max_tax_area_ext": 0}, {"city_name": "HENEFER", "county": "SUMMIT", "min_local_rate": 0.00191, "max_local_rate": 0.00191, "population": 837, "area_sq_miles": 4.43, "max_tax_area": "003", "max_tax_area_ext": 0}, {"city_name": "CORINNE CITY", "county": "BOX ELDER", "min_local_rate": 0.001904, "max_local_rate": 0.001904, "population": 853, "area_sq_miles": 6.9, "max_tax_area": "104", "max_tax_area_ext": 9055}, {"city_name": "MAPLETON", "county": "UTAH", "min_local_rate": 0.001856, "max_local_rate": 0.001856, "population": 12999, "area_sq_miles": 22.83, "max_tax_area": "140", "max_tax_area_ext": 0}, {"city_name": "LAYTON", "county": "DAVIS", "min_local_rate": 0.0016309999999999999, "max_local_rate": 0.0018449999999999999, "population": 82601, "area_sq_miles": 40.09, "max_tax_area": "039", "max_tax_area_ext": 0}, {"city_name": "VIRGIN TOWN", "county": "WASHINGTON", "min_local_rate": 0.001838, "max_local_rate": 0.001838, "population": 697, "area_sq_miles": 18.64, "max_tax_area": "012", "max_tax_area_ext": 0}, {"city_name": "LEWISTON", "county": "CACHE", "min_local_rate": 0.001699, "max_local_rate": 0.001829, "population": 1960, "area_sq_miles": 47.09, "max_tax_area": "020", "max_tax_area_ext": 0}, {"city_name": "MORONI", "county": "SANPETE", "min_local_rate": 0.0018260000000000001, "max_local_rate": 0.0018260000000000001, "population": 1617, "area_sq_miles": 1.79, "max_tax_area": "013", "max_tax_area_ext": 0}, {"city_name": "CANNONVILLE", "county": "GARFIELD", "min_local_rate": 0.00175, "max_local_rate": 0.001817, "population": 193, "area_sq_miles": 5.86, "max_tax_area": "003", "max_tax_area_ext": 0}, {"city_name": "CORNISH", "county": "CACHE", "min_local_rate": 0.001815, "max_local_rate": 0.001815, "population": 276, "area_sq_miles": 9.77, "max_tax_area": "022", "max_tax_area_ext": 0}, {"city_name": "RICHFIELD CITY", "county": "SEVIER", "min_local_rate": 0.001809, "max_local_rate": 0.001809, "population": 8220, "area_sq_miles": 10.22, "max_tax_area": "010", "max_tax_area_ext": 9900}, {"city_name": "SANTAQUIN", "county": "UTAH", "min_local_rate": 0.001809, "max_local_rate": 0.001809, "population": 33796, "area_sq_miles": 18.05, "max_tax_area": "190", "max_tax_area_ext": 1}, {"city_name": "BLUFFDALE", "county": "SALT LAKE", "min_local_rate": 0.001794, "max_local_rate": 0.001794, "population": 76320, "area_sq_miles": 38.41, "max_tax_area": "045", "max_tax_area_ext": 9904}, {"city_name": "HATCH", "county": "GARFIELD", "min_local_rate": 0.0017870000000000002, "max_local_rate": 0.0017870000000000002, "population": 142, "area_sq_miles": 2.91, "max_tax_area": "005", "max_tax_area_ext": 0}, {"city_name": "ORDERVILLE", "county": "KANE", "min_local_rate": 0.0017859999999999998, "max_local_rate": 0.0017859999999999998, "population": 592, "area_sq_miles": 14.88, "max_tax_area": "003", "max_tax_area_ext": 2}, {"city_name": "ESCALANTE", "county": "GARFIELD", "min_local_rate": 0.0017850000000000001, "max_local_rate": 0.0017850000000000001, "population": 821, "area_sq_miles": 5.28, "max_tax_area": "004", "max_tax_area_ext": 0}, {"city_name": "HIDEOUT TOWN", "county": "WASATCH", "min_local_rate": 0.001595, "max_local_rate": 0.0017850000000000001, "population": 1315, "area_sq_miles": 8.16, "max_tax_area": "024", "max_tax_area_ext": 0}, {"city_name": "BLUFF", "county": "SAN JUAN", "min_local_rate": 0.001778, "max_local_rate": 0.001778, "population": 243, "area_sq_miles": 45.42, "max_tax_area": "011", "max_tax_area_ext": 0}, {"city_name": "OAKLEY", "county": "SUMMIT", "min_local_rate": 0.001774, "max_local_rate": 0.001774, "population": 1599, "area_sq_miles": 12.36, "max_tax_area": "005", "max_tax_area_ext": 0}, {"city_name": "SPRINGVILLE", "county": "UTAH", "min_local_rate": 0.001479, "max_local_rate": 0.001765, "population": 35832, "area_sq_miles": 24.9, "max_tax_area": "131", "max_tax_area_ext": 1}, {"city_name": "OGDEN VALLEY CITY (2025 RATE)", "county": "WEBER", "min_local_rate": 0.0017209999999999999, "max_local_rate": 0.001754, "population": 8000, "area_sq_miles": 112.13, "max_tax_area": "028", "max_tax_area_ext": 0}, {"city_name": "HEBER CITY", "county": "WASATCH", "min_local_rate": 0.00174, "max_local_rate": 0.00174, "population": 17865, "area_sq_miles": 43.42, "max_tax_area": "003", "max_tax_area_ext": 0}, {"city_name": "GUNNISON", "county": "SANPETE", "min_local_rate": 0.001725, "max_local_rate": 0.001725, "population": 3550, "area_sq_miles": 7.98, "max_tax_area": "004", "max_tax_area_ext": 9501}, {"city_name": "MOUNT PLEASANT CITY", "county": "SANPETE", "min_local_rate": 0.001722, "max_local_rate": 0.001722, "population": 3820, "area_sq_miles": 4.94, "max_tax_area": "010", "max_tax_area_ext": 0}, {"city_name": "MAYFIELD", "county": "SANPETE", "min_local_rate": 0.0017130000000000001, "max_local_rate": 0.0017130000000000001, "population": 583, "area_sq_miles": 1.5, "max_tax_area": "006", "max_tax_area_ext": 0}, {"city_name": "EUREKA", "county": "JUAB", "min_local_rate": 0.001707, "max_local_rate": 0.001707, "population": 657, "area_sq_miles": 2.47, "max_tax_area": "008", "max_tax_area_ext": 0}, {"city_name": "PAYSON", "county": "UTAH", "min_local_rate": 0.001699, "max_local_rate": 0.001699, "population": 22516, "area_sq_miles": 22.38, "max_tax_area": "170", "max_tax_area_ext": 0}, {"city_name": "MANILA", "county": "DAGGETT", "min_local_rate": 0.001678, "max_local_rate": 0.001678, "population": 339, "area_sq_miles": 1.82, "max_tax_area": "003", "max_tax_area_ext": 0}, {"city_name": "SPANISH FORK", "county": "UTAH", "min_local_rate": 0.0013859999999999999, "max_local_rate": 0.0016719999999999999, "population": 44102, "area_sq_miles": 31.99, "max_tax_area": "151", "max_tax_area_ext": 9701}, {"city_name": "MIDWAY", "county": "WASATCH", "min_local_rate": 0.001639, "max_local_rate": 0.001639, "population": 6217, "area_sq_miles": 10.72, "max_tax_area": "004", "max_tax_area_ext": 0}, {"city_name": "ALPINE", "county": "UTAH", "min_local_rate": 0.0016120000000000002, "max_local_rate": 0.0016120000000000002, "population": 10304, "area_sq_miles": 13.8, "max_tax_area": "040", "max_tax_area_ext": 2}, {"city_name": "SALEM", "county": "UTAH", "min_local_rate": 0.001544, "max_local_rate": 0.0016120000000000002, "population": 10393, "area_sq_miles": 20.69, "max_tax_area": "179", "max_tax_area_ext": 0}, {"city_name": "GRANTSVILLE", "county": "TOOELE", "min_local_rate": 0.001604, "max_local_rate": 0.001604, "population": 14417, "area_sq_miles": 70.86, "max_tax_area": "002", "max_tax_area_ext": 9601}, {"city_name": "VERNAL", "county": "UINTAH", "min_local_rate": 0.001489, "max_local_rate": 0.001603, "population": 10432, "area_sq_miles": 8.25, "max_tax_area": "024", "max_tax_area_ext": 0}, {"city_name": "GLENDALE", "county": "KANE", "min_local_rate": 0.001597, "max_local_rate": 0.001597, "population": 310, "area_sq_miles": 11.09, "max_tax_area": "004", "max_tax_area_ext": 1}, {"city_name": "IVINS TOWN", "county": "WASHINGTON", "min_local_rate": 0.001594, "max_local_rate": 0.001594, "population": 10012, "area_sq_miles": 14.96, "max_tax_area": "004", "max_tax_area_ext": 0}, {"city_name": "PLEASANT GROVE", "county": "UTAH", "min_local_rate": 0.0015789999999999999, "max_local_rate": 0.00159, "population": 37630, "area_sq_miles": 15.82, "max_tax_area": "070", "max_tax_area_ext": 6}, {"city_name": "SPRINGDALE", "county": "WASHINGTON", "min_local_rate": 0.001581, "max_local_rate": 0.001581, "population": 576, "area_sq_miles": 7.25, "max_tax_area": "010", "max_tax_area_ext": 0}, {"city_name": "LEHI", "county": "UTAH", "min_local_rate": 0.001569, "max_local_rate": 0.00158, "population": 84373, "area_sq_miles": 53.18, "max_tax_area": "010", "max_tax_area_ext": 9900}, {"city_name": "KAMAS", "county": "SUMMIT", "min_local_rate": 0.001579, "max_local_rate": 0.001579, "population": 2185, "area_sq_miles": 7.52, "max_tax_area": "004", "max_tax_area_ext": 0}, {"city_name": "DUCHESNE", "county": "DUCHESNE", "min_local_rate": 0.001564, "max_local_rate": 0.001564, "population": 1623, "area_sq_miles": 4.8, "max_tax_area": "002", "max_tax_area_ext": 0}, {"city_name": "ENTERPRISE", "county": "WASHINGTON", "min_local_rate": 0.001533, "max_local_rate": 0.001533, "population": 2264, "area_sq_miles": 13.94, "max_tax_area": "001", "max_tax_area_ext": 0}, {"city_name": "HILDALE CITY", "county": "WASHINGTON", "min_local_rate": 0.001531, "max_local_rate": 0.001531, "population": 1184, "area_sq_miles": 14.23, "max_tax_area": "002", "max_tax_area_ext": 0}, {"city_name": "MENDON", "county": "CACHE", "min_local_rate": 0.0015220000000000001, "max_local_rate": 0.0015220000000000001, "population": 1335, "area_sq_miles": 2.87, "max_tax_area": "005", "max_tax_area_ext": 0}, {"city_name": "CIRCLEVILLE", "county": "PIUTE", "min_local_rate": 0.001521, "max_local_rate": 0.001521, "population": 544, "area_sq_miles": 17.92, "max_tax_area": "001", "max_tax_area_ext": 0}, {"city_name": "NIBLEY", "county": "CACHE", "min_local_rate": 0.001508, "max_local_rate": 0.001508, "population": 7926, "area_sq_miles": 8.22, "max_tax_area": "008", "max_tax_area_ext": 0}, {"city_name": "NEW HARMONY", "county": "WASHINGTON", "min_local_rate": 0.0014939999999999999, "max_local_rate": 0.0014939999999999999, "population": 245, "area_sq_miles": 1.01, "max_tax_area": "007", "max_tax_area_ext": 0}, {"city_name": "ENOCH", "county": "IRON", "min_local_rate": 0.00149, "max_local_rate": 0.00149, "population": 8231, "area_sq_miles": 12.66, "max_tax_area": "004", "max_tax_area_ext": 0}, {"city_name": "MORGAN", "county": "MORGAN", "min_local_rate": 0.001488, "max_local_rate": 0.001488, "population": 4455, "area_sq_miles": 5.36, "max_tax_area": "004", "max_tax_area_ext": 0}, {"city_name": "EPHRAIM", "county": "SANPETE", "min_local_rate": 0.001474, "max_local_rate": 0.001474, "population": 5937, "area_sq_miles": 8.62, "max_tax_area": "001", "max_tax_area_ext": 9500}, {"city_name": "FAIRFIELD", "county": "UTAH", "min_local_rate": 0.001055, "max_local_rate": 0.001472, "population": 156, "area_sq_miles": 44.9, "max_tax_area": "057", "max_tax_area_ext": 0}, {"city_name": "CEDAR HILLS", "county": "UTAH", "min_local_rate": 0.0014540000000000002, "max_local_rate": 0.0014540000000000002, "population": 9956, "area_sq_miles": 4.74, "max_tax_area": "021", "max_tax_area_ext": 1}, {"city_name": "NEPHI CITY", "county": "JUAB", "min_local_rate": 0.001446, "max_local_rate": 0.001446, "population": 6840, "area_sq_miles": 9.41, "max_tax_area": "001", "max_tax_area_ext": 0}, {"city_name": "SMITHFIELD", "county": "CACHE", "min_local_rate": 0.001434, "max_local_rate": 0.001434, "population": 14425, "area_sq_miles": 10.87, "max_tax_area": "015", "max_tax_area_ext": 0}, {"city_name": "FOUNTAIN GREEN", "county": "SANPETE", "min_local_rate": 0.00143, "max_local_rate": 0.00143, "population": 1260, "area_sq_miles": 2.11, "max_tax_area": "012", "max_tax_area_ext": 0}, {"city_name": "ALTAMONT", "county": "DUCHESNE", "min_local_rate": 0.001422, "max_local_rate": 0.001422, "population": 245, "area_sq_miles": 0.47, "max_tax_area": "001", "max_tax_area_ext": 0}, {"city_name": "ELK RIDGE", "county": "UTAH", "min_local_rate": 0.00142, "max_local_rate": 0.00142, "population": 4907, "area_sq_miles": 4.99, "max_tax_area": "181", "max_tax_area_ext": 0}, {"city_name": "KANARRAVILLE", "county": "IRON", "min_local_rate": 0.001418, "max_local_rate": 0.001418, "population": 467, "area_sq_miles": 0.69, "max_tax_area": "003", "max_tax_area_ext": 0}, {"city_name": "PORTAGE", "county": "BOX ELDER", "min_local_rate": 0.001409, "max_local_rate": 0.001409, "population": 288, "area_sq_miles": 4.63, "max_tax_area": "125", "max_tax_area_ext": 0}, {"city_name": "JUNCTION", "county": "PIUTE", "min_local_rate": 0.001396, "max_local_rate": 0.001396, "population": 211, "area_sq_miles": 22.09, "max_tax_area": "002", "max_tax_area_ext": 0}, {"city_name": "SARATOGA SPRINGS", "county": "UTAH", "min_local_rate": 0.001376, "max_local_rate": 0.001387, "population": 49354, "area_sq_miles": 44.07, "max_tax_area": "042", "max_tax_area_ext": 0}, {"city_name": "CLARKSTON", "county": "CACHE", "min_local_rate": 0.001382, "max_local_rate": 0.001382, "population": 763, "area_sq_miles": 1.67, "max_tax_area": "024", "max_tax_area_ext": 0}, {"city_name": "PLAIN CITY", "county": "WEBER", "min_local_rate": 0.000694, "max_local_rate": 0.001379, "population": 7833, "area_sq_miles": 21.71, "max_tax_area": "447", "max_tax_area_ext": 0}, {"city_name": "PANGUITCH", "county": "GARFIELD", "min_local_rate": 0.001358, "max_local_rate": 0.001358, "population": 1785, "area_sq_miles": 5.2, "max_tax_area": "007", "max_tax_area_ext": 0}, {"city_name": "GOSHEN", "county": "UTAH", "min_local_rate": 0.001357, "max_local_rate": 0.001357, "population": 959, "area_sq_miles": 1.4, "max_tax_area": "210", "max_tax_area_ext": 0}, {"city_name": "GENOLA", "county": "UTAH", "min_local_rate": 0.001349, "max_local_rate": 0.001349, "population": 1585, "area_sq_miles": 24.22, "max_tax_area": "200", "max_tax_area_ext": 0}, {"city_name": "SANTA CLARA CITY", "county": "WASHINGTON", "min_local_rate": 0.001332, "max_local_rate": 0.001332, "population": 8123, "area_sq_miles": 9.69, "max_tax_area": "009", "max_tax_area_ext": 0}, {"city_name": "NAPLES", "county": "UINTAH", "min_local_rate": 0.001331, "max_local_rate": 0.001331, "population": 2399, "area_sq_miles": 11.41, "max_tax_area": "014", "max_tax_area_ext": 0}, {"city_name": "MONA", "county": "JUAB", "min_local_rate": 0.0013030000000000001, "max_local_rate": 0.0013030000000000001, "population": 1906, "area_sq_miles": 4.7, "max_tax_area": "003", "max_tax_area_ext": 0}, {"city_name": "CASTLE VALLEY", "county": "GRAND", "min_local_rate": 0.0013, "max_local_rate": 0.0013, "population": 360, "area_sq_miles": 14.42, "max_tax_area": "009", "max_tax_area_ext": 0}, {"city_name": "RICHMOND", "county": "CACHE", "min_local_rate": 0.001287, "max_local_rate": 0.001287, "population": 2986, "area_sq_miles": 6.3, "max_tax_area": "018", "max_tax_area_ext": 0}, {"city_name": "DANIEL TOWN", "county": "WASATCH", "min_local_rate": 0.001268, "max_local_rate": 0.001268, "population": 887, "area_sq_miles": 5.72, "max_tax_area": "011", "max_tax_area_ext": 0}, {"city_name": "APPLE VALLEY TOWN", "county": "WASHINGTON", "min_local_rate": 0.001242, "max_local_rate": 0.001242, "population": 900, "area_sq_miles": 62.51, "max_tax_area": "045", "max_tax_area_ext": 0}, {"city_name": "SCOFIELD", "county": "CARBON", "min_local_rate": 0.0012400000000000002, "max_local_rate": 0.0012400000000000002, "population": 26, "area_sq_miles": 1.57, "max_tax_area": "006", "max_tax_area_ext": 0}, {"city_name": "LEVAN", "county": "JUAB", "min_local_rate": 0.001234, "max_local_rate": 0.001234, "population": 892, "area_sq_miles": 1.34, "max_tax_area": "002", "max_tax_area_ext": 0}, {"city_name": "LEAMINGTON TOWN", "county": "MILLARD", "min_local_rate": 0.00122, "max_local_rate": 0.00122, "population": 269, "area_sq_miles": 2.64, "max_tax_area": "011", "max_tax_area_ext": 0}, {"city_name": "HYDE PARK CITY", "county": "CACHE", "min_local_rate": 0.001077, "max_local_rate": 0.001217, "population": 5584, "area_sq_miles": 8.64, "max_tax_area": "014", "max_tax_area_ext": 0}, {"city_name": "MARYSVALE", "county": "PIUTE", "min_local_rate": 0.001203, "max_local_rate": 0.001203, "population": 416, "area_sq_miles": 29.35, "max_tax_area": "004", "max_tax_area_ext": 0}, {"city_name": "LINDON", "county": "UTAH", "min_local_rate": 0.001188, "max_local_rate": 0.001199, "population": 11704, "area_sq_miles": 14.7, "max_tax_area": "085", "max_tax_area_ext": 1}, {"city_name": "SPRING CITY", "county": "SANPETE", "min_local_rate": 0.001181, "max_local_rate": 0.001181, "population": 949, "area_sq_miles": 2.48, "max_tax_area": "011", "max_tax_area_ext": 0}, {"city_name": "ST GEORGE CITY", "county": "WASHINGTON", "min_local_rate": 0.001174, "max_local_rate": 0.001174, "population": 102519, "area_sq_miles": 121.89, "max_tax_area": "008", "max_tax_area_ext": 9900}, {"city_name": "OREM", "county": "UTAH", "min_local_rate": 0.001171, "max_local_rate": 0.001171, "population": 95910, "area_sq_miles": 32.08, "max_tax_area": "090", "max_tax_area_ext": 8}, {"city_name": "HIGHLAND", "county": "UTAH", "min_local_rate": 0.0011510000000000001, "max_local_rate": 0.0011510000000000001, "population": 19902, "area_sq_miles": 15.02, "max_tax_area": "045", "max_tax_area_ext": 1}, {"city_name": "PROVIDENCE", "county": "CACHE", "min_local_rate": 0.001097, "max_local_rate": 0.0011430000000000001, "population": 8995, "area_sq_miles": 7.24, "max_tax_area": "037", "max_tax_area_ext": 0}, {"city_name": "NORTH LOGAN", "county": "CACHE", "min_local_rate": 0.001108, "max_local_rate": 0.001108, "population": 11616, "area_sq_miles": 12.83, "max_tax_area": "011", "max_tax_area_ext": 0}, {"city_name": "MONROE", "county": "SEVIER", "min_local_rate": 0.001106, "max_local_rate": 0.001106, "population": 2615, "area_sq_miles": 5.86, "max_tax_area": "008", "max_tax_area_ext": 0}, {"city_name": "DEWEYVILLE", "county": "BOX ELDER", "min_local_rate": 0.001105, "max_local_rate": 0.001105, "population": 430, "area_sq_miles": 11.43, "max_tax_area": "106", "max_tax_area_ext": 0}, {"city_name": "SNOWVILLE TOWN", "county": "BOX ELDER", "min_local_rate": 0.001103, "max_local_rate": 0.001103, "population": 161, "area_sq_miles": 2.78, "max_tax_area": "129", "max_tax_area_ext": 0}, {"city_name": "HINCKLEY", "county": "MILLARD", "min_local_rate": 0.0011, "max_local_rate": 0.0011, "population": 630, "area_sq_miles": 8.4, "max_tax_area": "008", "max_tax_area_ext": 0}, {"city_name": "ELWOOD", "county": "BOX ELDER", "min_local_rate": 0.001072, "max_local_rate": 0.001072, "population": 1249, "area_sq_miles": 15.52, "max_tax_area": "108", "max_tax_area_ext": 0}, {"city_name": "MANTI", "county": "SANPETE", "min_local_rate": 0.001062, "max_local_rate": 0.001062, "population": 3588, "area_sq_miles": 5.4, "max_tax_area": "002", "max_tax_area_ext": 9900}, {"city_name": "FAIRVIEW", "county": "SANPETE", "min_local_rate": 0.001052, "max_local_rate": 0.001052, "population": 1262, "area_sq_miles": 2.13, "max_tax_area": "009", "max_tax_area_ext": 0}, {"city_name": "RANDOLPH", "county": "RICH", "min_local_rate": 0.0010299999999999999, "max_local_rate": 0.0010299999999999999, "population": 491, "area_sq_miles": 2.33, "max_tax_area": "012", "max_tax_area_ext": 0}, {"city_name": "HOWELL CITY", "county": "BOX ELDER", "min_local_rate": 0.000974, "max_local_rate": 0.000974, "population": 235, "area_sq_miles": 63.78, "max_tax_area": "118", "max_tax_area_ext": 0}, {"city_name": "LOGAN CITY", "county": "CACHE", "min_local_rate": 0.000957, "max_local_rate": 0.000957, "population": null, "area_sq_miles": 33.68, "max_tax_area": "027", "max_tax_area_ext": 9900}, {"city_name": "HYRUM", "county": "CACHE", "min_local_rate": 0.000929, "max_local_rate": 0.000929, "population": 10594, "area_sq_miles": 11.16, "max_tax_area": "003", "max_tax_area_ext": 0}, {"city_name": "FIELDING", "county": "BOX ELDER", "min_local_rate": 0.00091, "max_local_rate": 0.00091, "population": 591, "area_sq_miles": 1.0, "max_tax_area": "111", "max_tax_area_ext": 0}, {"city_name": "KINGSTON", "county": "PIUTE", "min_local_rate": 0.0009090000000000001, "max_local_rate": 0.0009090000000000001, "population": 137, "area_sq_miles": 8.7, "max_tax_area": "003", "max_tax_area_ext": 0}, {"city_name": "WELLSVILLE", "county": "CACHE", "min_local_rate": 0.000883, "max_local_rate": 0.000883, "population": 4137, "area_sq_miles": 13.19, "max_tax_area": "004", "max_tax_area_ext": 0}, {"city_name": "BEAR RIVER CITY", "county": "BOX ELDER", "min_local_rate": 0.000876, "max_local_rate": 0.000876, "population": 878, "area_sq_miles": 3.22, "max_tax_area": "102", "max_tax_area_ext": 0}, {"city_name": "CEDAR FORT", "county": "UTAH", "min_local_rate": 0.000857, "max_local_rate": 0.000857, "population": 420, "area_sq_miles": 36.47, "max_tax_area": "050", "max_tax_area_ext": 0}, {"city_name": "HONEYVILLE CITY", "county": "BOX ELDER", "min_local_rate": 0.000844, "max_local_rate": 0.000844, "population": 1725, "area_sq_miles": 21.01, "max_tax_area": "182", "max_tax_area_ext": 0}, {"city_name": "STERLING", "county": "SANPETE", "min_local_rate": 0.000835, "max_local_rate": 0.000835, "population": 289, "area_sq_miles": 0.54, "max_tax_area": "003", "max_tax_area_ext": 0}, {"city_name": "NEWTON", "county": "CACHE", "min_local_rate": 0.000819, "max_local_rate": 0.000819, "population": 815, "area_sq_miles": 1.55, "max_tax_area": "026", "max_tax_area_ext": 0}, {"city_name": "AURORA", "county": "SEVIER", "min_local_rate": 0.000795, "max_local_rate": 0.000795, "population": 1030, "area_sq_miles": 1.55, "max_tax_area": "003", "max_tax_area_ext": 0}, {"city_name": "FAYETTE", "county": "SANPETE", "min_local_rate": 0.000776, "max_local_rate": 0.000776, "population": 260, "area_sq_miles": 0.66, "max_tax_area": "007", "max_tax_area_ext": 0}, {"city_name": "JOSEPH", "county": "SEVIER", "min_local_rate": 0.000773, "max_local_rate": 0.000773, "population": 301, "area_sq_miles": 1.43, "max_tax_area": "006", "max_tax_area_ext": 0}, {"city_name": "OAK CITY", "county": "MILLARD", "min_local_rate": 0.00076, "max_local_rate": 0.00076, "population": 630, "area_sq_miles": 1.96, "max_tax_area": "009", "max_tax_area_ext": 0}, {"city_name": "CENTRAL VALLEY TOWN", "county": "SEVIER", "min_local_rate": 0.000748, "max_local_rate": 0.000748, "population": 671, "area_sq_miles": 3.46, "max_tax_area": "023", "max_tax_area_ext": 0}, {"city_name": "ELSINORE", "county": "SEVIER", "min_local_rate": 0.000735, "max_local_rate": 0.000735, "population": 865, "area_sq_miles": 4.36, "max_tax_area": "004", "max_tax_area_ext": 0}, {"city_name": "WALES", "county": "SANPETE", "min_local_rate": 0.00073, "max_local_rate": 0.00073, "population": 357, "area_sq_miles": 0.67, "max_tax_area": "014", "max_tax_area_ext": 0}, {"city_name": "RUSH VALLEY TOWN", "county": "TOOELE", "min_local_rate": 0.000722, "max_local_rate": 0.000722, "population": 477, "area_sq_miles": 31.2, "max_tax_area": "009", "max_tax_area_ext": 0}, {"city_name": "PARAGONAH", "county": "IRON", "min_local_rate": 0.000706, "max_local_rate": 0.000706, "population": 568, "area_sq_miles": 1.04, "max_tax_area": "002", "max_tax_area_ext": 0}, {"city_name": "SIGUARD", "county": "SEVIER", "min_local_rate": 0.000697, "max_local_rate": 0.000697, "population": 422, "area_sq_miles": 1.84, "max_tax_area": "012", "max_tax_area_ext": 0}, {"city_name": "FILLMORE", "county": "MILLARD", "min_local_rate": 0.000696, "max_local_rate": 0.000696, "population": 2643, "area_sq_miles": 12.41, "max_tax_area": "014", "max_tax_area_ext": 9900}, {"city_name": "ANTIMONY", "county": "GARFIELD", "min_local_rate": 0.0006720000000000001, "max_local_rate": 0.0006720000000000001, "population": 124, "area_sq_miles": 15.94, "max_tax_area": "001", "max_tax_area_ext": 0}, {"city_name": "CENTERFIELD", "county": "SANPETE", "min_local_rate": 0.0006670000000000001, "max_local_rate": 0.0006670000000000001, "population": 1398, "area_sq_miles": 3.17, "max_tax_area": "005", "max_tax_area_ext": 0}, {"city_name": "MILLVILLE", "county": "CACHE", "min_local_rate": 0.000602, "max_local_rate": 0.0006479999999999999, "population": 2435, "area_sq_miles": 4.6, "max_tax_area": "007", "max_tax_area_ext": 0}, {"city_name": "PLYMOUTH", "county": "BOX ELDER", "min_local_rate": 0.000601, "max_local_rate": 0.000601, "population": 433, "area_sq_miles": 1.57, "max_tax_area": "123", "max_tax_area_ext": 0}, {"city_name": "PARADISE", "county": "CACHE", "min_local_rate": 0.000589, "max_local_rate": 0.000589, "population": 1014, "area_sq_miles": 2.59, "max_tax_area": "002", "max_tax_area_ext": 0}, {"city_name": "TROPIC", "county": "GARFIELD", "min_local_rate": 0.0005780000000000001, "max_local_rate": 0.0005780000000000001, "population": 505, "area_sq_miles": 12.66, "max_tax_area": "008", "max_tax_area_ext": 0}, {"city_name": "SCIPIO", "county": "MILLARD", "min_local_rate": 0.000572, "max_local_rate": 0.000572, "population": 366, "area_sq_miles": 1.73, "max_tax_area": "005", "max_tax_area_ext": 0}, {"city_name": "REDMOND", "county": "SEVIER", "min_local_rate": 0.000557, "max_local_rate": 0.000557, "population": 796, "area_sq_miles": 1.59, "max_tax_area": "009", "max_tax_area_ext": 0}, {"city_name": "BEAVER", "county": "BEAVER", "min_local_rate": 0.000545, "max_local_rate": 0.000545, "population": 3708, "area_sq_miles": 10.89, "max_tax_area": "003", "max_tax_area_ext": 9900}, {"city_name": "GLENWOOD", "county": "SEVIER", "min_local_rate": 0.000542, "max_local_rate": 0.000542, "population": 491, "area_sq_miles": 0.86, "max_tax_area": "005", "max_tax_area_ext": 0}, {"city_name": "LAKETOWN", "county": "RICH", "min_local_rate": 0.000538, "max_local_rate": 0.000538, "population": 314, "area_sq_miles": 4.55, "max_tax_area": "013", "max_tax_area_ext": 0}, {"city_name": "HENRIEVILLE", "county": "GARFIELD", "min_local_rate": 0.000521, "max_local_rate": 0.000521, "population": 231, "area_sq_miles": 2.13, "max_tax_area": "006", "max_tax_area_ext": 0}, {"city_name": "MEADOW", "county": "MILLARD", "min_local_rate": 0.000513, "max_local_rate": 0.000513, "population": 347, "area_sq_miles": 0.85, "max_tax_area": "004", "max_tax_area_ext": 0}, {"city_name": "RIVER HEIGHTS", "county": "CACHE", "min_local_rate": 0.0005110000000000001, "max_local_rate": 0.0005110000000000001, "population": 2147, "area_sq_miles": 1.19, "max_tax_area": "010", "max_tax_area_ext": 0}, {"city_name": "AMALGA", "county": "CACHE", "min_local_rate": 0.000501, "max_local_rate": 0.000501, "population": 500, "area_sq_miles": 6.4, "max_tax_area": "016", "max_tax_area_ext": 0}, {"city_name": "HOLDEN", "county": "MILLARD", "min_local_rate": 0.0005009999999999999, "max_local_rate": 0.0005009999999999999, "population": 458, "area_sq_miles": 1.0, "max_tax_area": "002", "max_tax_area_ext": 0}, {"city_name": "TRENTON", "county": "CACHE", "min_local_rate": 0.000464, "max_local_rate": 0.000464, "population": 521, "area_sq_miles": 14.98, "max_tax_area": "023", "max_tax_area_ext": 0}, {"city_name": "VERNON", "county": "TOOELE", "min_local_rate": 0.00043799999999999997, "max_local_rate": 0.00043799999999999997, "population": 286, "area_sq_miles": 13.8, "max_tax_area": "005", "max_tax_area_ext": 0}, {"city_name": "HANKSVILLE TOWN", "county": "WAYNE", "min_local_rate": 0.00039, "max_local_rate": 0.00039, "population": 171, "area_sq_miles": 2.8, "max_tax_area": "007", "max_tax_area_ext": 0}, {"city_name": "ANNABELLA TOWN", "county": "SEVIER", "min_local_rate": 0.00038, "max_local_rate": 0.00038, "population": 872, "area_sq_miles": 1.07, "max_tax_area": "002", "max_tax_area_ext": 0}, {"city_name": "GARDEN CITY", "county": "RICH", "min_local_rate": 0.000377, "max_local_rate": 0.000377, "population": 629, "area_sq_miles": 15.82, "max_tax_area": "014", "max_tax_area_ext": 0}, {"city_name": "KANOSH", "county": "MILLARD", "min_local_rate": 0.000368, "max_local_rate": 0.000368, "population": 511, "area_sq_miles": 1.25, "max_tax_area": "003", "max_tax_area_ext": 0}, {"city_name": "KOOSHAREM TOWN", "county": "SEVIER", "min_local_rate": 0.000202, "max_local_rate": 0.000202, "population": 251, "area_sq_miles": 1.67, "max_tax_area": "007", "max_tax_area_ext": 0}, {"city_name": "LYMAN", "county": "WAYNE", "min_local_rate": 0.00019600000000000002, "max_local_rate": 0.00019600000000000002, "population": 220, "area_sq_miles": 2.95, "max_tax_area": "003", "max_tax_area_ext": 0}, {"city_name": "BOULDER", "county": "GARFIELD", "min_local_rate": 0.000192, "max_local_rate": 0.000192, "population": 241, "area_sq_miles": 33.72, "max_tax_area": "002", "max_tax_area_ext": 0}, {"city_name": "TORREY", "county": "WAYNE", "min_local_rate": 0.00014700000000000002, "max_local_rate": 0.00014700000000000002, "population": 257, "area_sq_miles": 2.8, "max_tax_area": "004", "max_tax_area_ext": 0}, {"city_name": "BICKNELL", "county": "WAYNE", "min_local_rate": 0.000133, "max_local_rate": 0.000133, "population": 337, "area_sq_miles": 0.93, "max_tax_area": "001", "max_tax_area_ext": 0}, {"city_name": "LOA", "county": "WAYNE", "min_local_rate": 0.000132, "max_local_rate": 0.000132, "population": 527, "area_sq_miles": 1.55, "max_tax_area": "002", "max_tax_area_ext": 0}];
+        const entitiesData = {"EAST CARBON - SUNNYSIDE": [{"entity_code": 3015, "entity_name": "EAST CARBON - SUNNYSIDE", "rate": 0.00875}, {"entity_code": 4010, "entity_name": "CARBON WATER CONSERVANCY DISTRICT", "rate": 0.000125}], "LEEDS": [{"entity_code": 4130, "entity_name": "GRAPEVINE WASH LOCAL DISTRICT", "rate": 0.006533}, {"entity_code": 4120, "entity_name": "HURRICANE VALLEY FIRE DISTRICT", "rate": 0.000996}, {"entity_code": 3060, "entity_name": "LEEDS", "rate": 0.000418}, {"entity_code": 4010, "entity_name": "THE WASHINGTON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000399}, {"entity_code": 4110, "entity_name": "SOUTHWEST MOSQUITO ABATEMENT & CONTROL DISTRICT", "rate": 2.1e-05}], "MAGNA CITY": [{"entity_code": 4340, "entity_name": "SALT LAKE VALLEY LAW ENFORCEMENT SERVICE AREA", "rate": 0.002246}, {"entity_code": 4320, "entity_name": "UNIFIED FIRE SERVICE AREA", "rate": 0.00165}, {"entity_code": 4080, "entity_name": "MAGNA WATER DISTRICT", "rate": 0.00132}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4045, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 4030, "entity_name": "MAGNA MOSQUITO ABATEMENT DISTRICT", "rate": 5e-05}, {"entity_code": 3903, "entity_name": "MAGNA CITY", "rate": 0.0}], "CITY OF KEARNS": [{"entity_code": 4340, "entity_name": "SALT LAKE VALLEY LAW ENFORCEMENT SERVICE AREA", "rate": 0.002246}, {"entity_code": 4320, "entity_name": "UNIFIED FIRE SERVICE AREA", "rate": 0.00165}, {"entity_code": 4180, "entity_name": "OQUIRRH RECREATION AND PARKS DISTRICT", "rate": 0.000838}, {"entity_code": 4120, "entity_name": "KEARNS IMPROVEMENT DISTRICT", "rate": 0.000409}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4045, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 4030, "entity_name": "MAGNA MOSQUITO ABATEMENT DISTRICT", "rate": 5e-05}, {"entity_code": 3902, "entity_name": "CITY OF KEARNS", "rate": 0.0}], "SALT LAKE CITY": [{"entity_code": 3070, "entity_name": "SALT LAKE CITY", "rate": 0.00318}, {"entity_code": 4080, "entity_name": "MAGNA WATER DISTRICT", "rate": 0.00132}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4010, "entity_name": "SALT LAKE METROPOLITAN WATER DISTRICT", "rate": 0.000327}, {"entity_code": 4020, "entity_name": "SALT LAKE CITY MOSQUITO ABATEMENT DISTRICT", "rate": 0.000163}], "TOWN OF COPPERTON ": [{"entity_code": 4340, "entity_name": "SALT LAKE VALLEY LAW ENFORCEMENT SERVICE AREA", "rate": 0.002246}, {"entity_code": 4320, "entity_name": "UNIFIED FIRE SERVICE AREA", "rate": 0.00165}, {"entity_code": 4100, "entity_name": "COPPERTON IMPROVEMENT DISTRICT", "rate": 0.000793}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4150, "entity_name": "JORDAN BASIN IMPROVEMENT DISTRICT", "rate": 0.00018}, {"entity_code": 4040, "entity_name": "SOUTH SALT LAKE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 8e-06}, {"entity_code": 3900, "entity_name": "TOWN OF COPPERTON ", "rate": 0.0}], "WHITE CITY ": [{"entity_code": 4340, "entity_name": "SALT LAKE VALLEY LAW ENFORCEMENT SERVICE AREA", "rate": 0.002246}, {"entity_code": 4320, "entity_name": "UNIFIED FIRE SERVICE AREA", "rate": 0.00165}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4140, "entity_name": "SANDY SUBURBAN IMPROVEMENT DISTRICT", "rate": 0.000392}, {"entity_code": 4045, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 4160, "entity_name": "CRESCENT CEMETERY MAINTENANCE DISTRICT", "rate": 2.1e-05}, {"entity_code": 4040, "entity_name": "SOUTH SALT LAKE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 8e-06}, {"entity_code": 3904, "entity_name": "WHITE CITY ", "rate": 0.0}], "EMIGRATION CANYON": [{"entity_code": 4340, "entity_name": "SALT LAKE VALLEY LAW ENFORCEMENT SERVICE AREA", "rate": 0.002246}, {"entity_code": 4320, "entity_name": "UNIFIED FIRE SERVICE AREA", "rate": 0.00165}, {"entity_code": 4170, "entity_name": "EMIGRATION IMPROVEMENT DISTRICT", "rate": 0.000507}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 3901, "entity_name": "EMIGRATION CANYON", "rate": 0.0}], "WEST VALLEY CITY": [{"entity_code": 3120, "entity_name": "WEST VALLEY CITY", "rate": 0.002647}, {"entity_code": 4080, "entity_name": "MAGNA WATER DISTRICT", "rate": 0.00132}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4045, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 4030, "entity_name": "MAGNA MOSQUITO ABATEMENT DISTRICT", "rate": 5e-05}], "TAYLORSVILLE CITY": [{"entity_code": 4320, "entity_name": "UNIFIED FIRE SERVICE AREA", "rate": 0.00165}, {"entity_code": 4180, "entity_name": "OQUIRRH RECREATION AND PARKS DISTRICT", "rate": 0.000838}, {"entity_code": 3105, "entity_name": "TAYLORSVILLE CITY", "rate": 0.00082}, {"entity_code": 4120, "entity_name": "KEARNS IMPROVEMENT DISTRICT", "rate": 0.000409}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4045, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 4040, "entity_name": "SOUTH SALT LAKE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 8e-06}], "BRIGHTON": [{"entity_code": 4340, "entity_name": "SALT LAKE VALLEY LAW ENFORCEMENT SERVICE AREA", "rate": 0.002246}, {"entity_code": 4320, "entity_name": "UNIFIED FIRE SERVICE AREA", "rate": 0.00165}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4040, "entity_name": "SOUTH SALT LAKE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 8e-06}, {"entity_code": 3022, "entity_name": "BRIGHTON", "rate": 0.0}], "VINEYARD": [{"entity_code": 3195, "entity_name": "VINEYARD", "rate": 0.003796}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}, {"entity_code": 4080, "entity_name": "NORTH UTAH COUNTY WATER CONSERVANCY DISTRICT", "rate": 1.1e-05}], "MIDVALE": [{"entity_code": 4320, "entity_name": "UNIFIED FIRE SERVICE AREA", "rate": 0.00165}, {"entity_code": 3040, "entity_name": "MIDVALE", "rate": 0.001167}, {"entity_code": 4070, "entity_name": "MIDVALLEY SEWER DISTRICT", "rate": 0.000401}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4045, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 4040, "entity_name": "SOUTH SALT LAKE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 8e-06}], "MILLCREEK": [{"entity_code": 4320, "entity_name": "UNIFIED FIRE SERVICE AREA", "rate": 0.00165}, {"entity_code": 3045, "entity_name": "MILLCREEK", "rate": 0.001267}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4045, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 4090, "entity_name": "COTTONWOOD IMPROVEMENT DISTRICT", "rate": 0.000278}, {"entity_code": 4040, "entity_name": "SOUTH SALT LAKE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 8e-06}], "HERRIMAN TOWN": [{"entity_code": 4370, "entity_name": "HERRIMAN CITY SAFETY ENFORCEMENT AREA", "rate": 0.00144}, {"entity_code": 4362, "entity_name": "HERRIMAN FIRE SERVICE AREA", "rate": 0.001352}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4045, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 3035, "entity_name": "HERRIMAN TOWN", "rate": 0.00018}, {"entity_code": 4150, "entity_name": "JORDAN BASIN IMPROVEMENT DISTRICT", "rate": 0.00018}, {"entity_code": 4040, "entity_name": "SOUTH SALT LAKE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 8e-06}], "WELLINGTON": [{"entity_code": 3060, "entity_name": "WELLINGTON", "rate": 0.003}, {"entity_code": 4020, "entity_name": "PRICE RIVER WATER IMPROVEMENT DISTRICT", "rate": 0.00066}, {"entity_code": 4010, "entity_name": "CARBON WATER CONSERVANCY DISTRICT", "rate": 0.000125}], "SOUTH OGDEN": [{"entity_code": 3100, "entity_name": "SOUTH OGDEN", "rate": 0.002455}, {"entity_code": 4010, "entity_name": "CENTRAL WEBER SEWER IMPROVEMENT DISTRICT", "rate": 0.00054}, {"entity_code": 4140, "entity_name": "UINTAH HIGHLANDS WATER AND SEWER IMPROVEMENT DISTRICT", "rate": 0.000368}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4320, "entity_name": "WEBER AREA DISPATCH 911 AND EMERGENCY SERVICES DISTRICT", "rate": 0.000163}, {"entity_code": 4080, "entity_name": "WEBER COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 6.4e-05}], "HARRISVILLE": [{"entity_code": 3020, "entity_name": "HARRISVILLE", "rate": 0.001534}, {"entity_code": 4330, "entity_name": "NORTH VIEW FIRE DISTRICT", "rate": 0.001096}, {"entity_code": 4010, "entity_name": "CENTRAL WEBER SEWER IMPROVEMENT DISTRICT", "rate": 0.00054}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4320, "entity_name": "WEBER AREA DISPATCH 911 AND EMERGENCY SERVICES DISTRICT", "rate": 0.000163}, {"entity_code": 4070, "entity_name": "BONA VISTA WATER IMPROVEMENT DISTRICT", "rate": 0.000145}, {"entity_code": 4080, "entity_name": "WEBER COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 6.4e-05}, {"entity_code": 4020, "entity_name": "BEN LOMOND CEMETERY MAINTENANCE DISTRICT", "rate": 3.7e-05}], "OGDEN CITY": [{"entity_code": 3050, "entity_name": "OGDEN CITY", "rate": 0.002193}, {"entity_code": 4010, "entity_name": "CENTRAL WEBER SEWER IMPROVEMENT DISTRICT", "rate": 0.00054}, {"entity_code": 4140, "entity_name": "UINTAH HIGHLANDS WATER AND SEWER IMPROVEMENT DISTRICT", "rate": 0.000368}, {"entity_code": 6030, "entity_name": "OGDEN CITY - SPECIAL LEVY TO PURCHASE WBWCD WATER", "rate": 0.000198}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4320, "entity_name": "WEBER AREA DISPATCH 911 AND EMERGENCY SERVICES DISTRICT", "rate": 0.000163}, {"entity_code": 4080, "entity_name": "WEBER COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 6.4e-05}], "NORTH OGDEN CITY": [{"entity_code": 3040, "entity_name": "NORTH OGDEN CITY", "rate": 0.001304}, {"entity_code": 4330, "entity_name": "NORTH VIEW FIRE DISTRICT", "rate": 0.001096}, {"entity_code": 4010, "entity_name": "CENTRAL WEBER SEWER IMPROVEMENT DISTRICT", "rate": 0.00054}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4320, "entity_name": "WEBER AREA DISPATCH 911 AND EMERGENCY SERVICES DISTRICT", "rate": 0.000163}, {"entity_code": 4070, "entity_name": "BONA VISTA WATER IMPROVEMENT DISTRICT", "rate": 0.000145}, {"entity_code": 4080, "entity_name": "WEBER COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 6.4e-05}, {"entity_code": 4020, "entity_name": "BEN LOMOND CEMETERY MAINTENANCE DISTRICT", "rate": 3.7e-05}, {"entity_code": 6080, "entity_name": "WEBER FIRE DISTRICT - BOND ( est. 1/1/06)", "rate": 0.0}], "ELMO": [{"entity_code": 4020, "entity_name": "CASTLE VALLEY SPECIAL SERVICE DISTRICT", "rate": 0.002079}, {"entity_code": 3040, "entity_name": "ELMO", "rate": 0.001031}, {"entity_code": 4010, "entity_name": "EMERY WATER CONSERVANCY DISTRICT", "rate": 0.000411}], "SOUTH SALT LAKE CITY": [{"entity_code": 3100, "entity_name": "SOUTH SALT LAKE CITY", "rate": 0.002608}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4045, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 4060, "entity_name": "MT. OLYMPUS IMPROVEMENT DISTRICT", "rate": 0.000163}, {"entity_code": 4040, "entity_name": "SOUTH SALT LAKE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 8e-06}], "WOODLAND HILLS": [{"entity_code": 3200, "entity_name": "WOODLAND HILLS", "rate": 0.003093}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}], "CLEARFIELD": [{"entity_code": 4110, "entity_name": "NORTH DAVIS FIRE DISTRICT", "rate": 0.001557}, {"entity_code": 3030, "entity_name": "CLEARFIELD", "rate": 0.001218}, {"entity_code": 4015, "entity_name": "NORTH DAVIS SEWER DISTRICT", "rate": 0.00032}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 6000, "entity_name": "ANIMAL WELFARE SERVICES DISTRICT (COUNTY WIDE)", "rate": 9.8e-05}, {"entity_code": 4010, "entity_name": "DAVIS COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.3e-05}], "EMERY": [{"entity_code": 4020, "entity_name": "CASTLE VALLEY SPECIAL SERVICE DISTRICT", "rate": 0.002079}, {"entity_code": 3050, "entity_name": "EMERY", "rate": 0.000933}, {"entity_code": 4010, "entity_name": "EMERY WATER CONSERVANCY DISTRICT", "rate": 0.000411}], "MURRAY": [{"entity_code": 3050, "entity_name": "MURRAY", "rate": 0.001696}, {"entity_code": 4200, "entity_name": "COTTONWOOD HEIGHTS PARKS AND RECREATION SERVICE AREA", "rate": 0.000653}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4045, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 4090, "entity_name": "COTTONWOOD IMPROVEMENT DISTRICT", "rate": 0.000278}, {"entity_code": 4040, "entity_name": "SOUTH SALT LAKE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 8e-06}], "WEST JORDAN CITY": [{"entity_code": 3110, "entity_name": "WEST JORDAN CITY", "rate": 0.001328}, {"entity_code": 4180, "entity_name": "OQUIRRH RECREATION AND PARKS DISTRICT", "rate": 0.000838}, {"entity_code": 4120, "entity_name": "KEARNS IMPROVEMENT DISTRICT", "rate": 0.000409}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4045, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 4030, "entity_name": "MAGNA MOSQUITO ABATEMENT DISTRICT", "rate": 5e-05}], "FERRON": [{"entity_code": 4020, "entity_name": "CASTLE VALLEY SPECIAL SERVICE DISTRICT", "rate": 0.002079}, {"entity_code": 3060, "entity_name": "FERRON", "rate": 0.000867}, {"entity_code": 4010, "entity_name": "EMERY WATER CONSERVANCY DISTRICT", "rate": 0.000411}], "ORANGEVILLE": [{"entity_code": 4020, "entity_name": "CASTLE VALLEY SPECIAL SERVICE DISTRICT", "rate": 0.002079}, {"entity_code": 3080, "entity_name": "ORANGEVILLE", "rate": 0.000856}, {"entity_code": 4010, "entity_name": "EMERY WATER CONSERVANCY DISTRICT", "rate": 0.000411}], "CASTLE DALE": [{"entity_code": 4020, "entity_name": "CASTLE VALLEY SPECIAL SERVICE DISTRICT", "rate": 0.002079}, {"entity_code": 3010, "entity_name": "CASTLE DALE", "rate": 0.000839}, {"entity_code": 4010, "entity_name": "EMERY WATER CONSERVANCY DISTRICT", "rate": 0.000411}], "TREMONTON": [{"entity_code": 3150, "entity_name": "TREMONTON", "rate": 0.002797}, {"entity_code": 4190, "entity_name": "BEAR RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000225}, {"entity_code": 4010, "entity_name": "BOX ELDER MOSQUITO ABATEMENT DISTRICT", "rate": 0.000172}, {"entity_code": 4040, "entity_name": "GARLAND CEMETERY MAINTENANCE DISTRICT", "rate": 9.4e-05}], "SUNSET": [{"entity_code": 4110, "entity_name": "NORTH DAVIS FIRE DISTRICT", "rate": 0.001557}, {"entity_code": 3110, "entity_name": "SUNSET", "rate": 0.001022}, {"entity_code": 4015, "entity_name": "NORTH DAVIS SEWER DISTRICT", "rate": 0.00032}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 6000, "entity_name": "ANIMAL WELFARE SERVICES DISTRICT (COUNTY WIDE)", "rate": 9.8e-05}, {"entity_code": 4010, "entity_name": "DAVIS COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.3e-05}], "GARLAND": [{"entity_code": 3070, "entity_name": "GARLAND", "rate": 0.00272}, {"entity_code": 4190, "entity_name": "BEAR RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000225}, {"entity_code": 4010, "entity_name": "BOX ELDER MOSQUITO ABATEMENT DISTRICT", "rate": 0.000172}, {"entity_code": 4040, "entity_name": "GARLAND CEMETERY MAINTENANCE DISTRICT", "rate": 9.4e-05}], "COTTONWOOD HEIGHTS": [{"entity_code": 3025, "entity_name": "COTTONWOOD HEIGHTS", "rate": 0.001509}, {"entity_code": 4200, "entity_name": "COTTONWOOD HEIGHTS PARKS AND RECREATION SERVICE AREA", "rate": 0.000653}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4045, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 4090, "entity_name": "COTTONWOOD IMPROVEMENT DISTRICT", "rate": 0.000278}, {"entity_code": 4040, "entity_name": "SOUTH SALT LAKE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 8e-06}], "HUNTINGTON": [{"entity_code": 4020, "entity_name": "CASTLE VALLEY SPECIAL SERVICE DISTRICT", "rate": 0.002079}, {"entity_code": 3070, "entity_name": "HUNTINGTON", "rate": 0.000697}, {"entity_code": 4010, "entity_name": "EMERY WATER CONSERVANCY DISTRICT", "rate": 0.000411}], "MONTICELLO": [{"entity_code": 3020, "entity_name": "MONTICELLO", "rate": 0.001774}, {"entity_code": 4050, "entity_name": "SAN JUAN COUNTY HEALTH SERVICE DISTRICT", "rate": 0.000693}, {"entity_code": 4030, "entity_name": "SAN JUAN COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000542}, {"entity_code": 4010, "entity_name": "MONTICELLO CEMETERY MAINTENANCE DISTRICT", "rate": 0.000175}], "WEST POINT": [{"entity_code": 4110, "entity_name": "NORTH DAVIS FIRE DISTRICT", "rate": 0.001557}, {"entity_code": 3140, "entity_name": "WEST POINT", "rate": 0.00073}, {"entity_code": 4015, "entity_name": "NORTH DAVIS SEWER DISTRICT", "rate": 0.00032}, {"entity_code": 4075, "entity_name": "HOOPER WATER IMPROVEMENT DISTRICT", "rate": 0.000194}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 6000, "entity_name": "ANIMAL WELFARE SERVICES DISTRICT (COUNTY WIDE)", "rate": 9.8e-05}, {"entity_code": 4010, "entity_name": "DAVIS COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.3e-05}], "WALLSBURG": [{"entity_code": 3040, "entity_name": "WALLSBURG", "rate": 0.002181}, {"entity_code": 4065, "entity_name": "WASATCH COUNTY FIRE PROTECTION SPECIAL SERVICE DISTRICT", "rate": 0.000413}, {"entity_code": 4270, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4090, "entity_name": "WASATCH COUNTY SPECIAL SERVICE DISTRICT NO 21", "rate": 0.000157}], "BIG WATER": [{"entity_code": 3020, "entity_name": "BIG WATER", "rate": 0.002791}, {"entity_code": 4050, "entity_name": "KANE COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000354}], "WOODS CROSS CITY": [{"entity_code": 3150, "entity_name": "WOODS CROSS CITY", "rate": 0.001392}, {"entity_code": 4120, "entity_name": "SOUTH DAVIS METRO FIRE SERVICE AREA", "rate": 0.000538}, {"entity_code": 4055, "entity_name": "SOUTH DAVIS COUNTY SEWER IMPROVEMENT DISTRICT", "rate": 0.000451}, {"entity_code": 4100, "entity_name": "SOUTH DAVIS RECREATION DISTRICT", "rate": 0.000201}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4030, "entity_name": "SOUTH DAVIS COUNTY WATER IMPROVEMENT DISTRICT", "rate": 0.00012}, {"entity_code": 6000, "entity_name": "ANIMAL WELFARE SERVICES DISTRICT (COUNTY WIDE)", "rate": 9.8e-05}, {"entity_code": 4010, "entity_name": "DAVIS COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.3e-05}, {"entity_code": 4020, "entity_name": "BOUNTIFUL IRRIGATION DISTRICT", "rate": 5.9e-05}], "RIVERTON": [{"entity_code": 4361, "entity_name": "RIVERTON FIRE SERVICE AREA", "rate": 0.00114}, {"entity_code": 4360, "entity_name": "RIVERTON LAW ENFORCEMENT SERVICE AREA", "rate": 0.001058}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4045, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 4150, "entity_name": "JORDAN BASIN IMPROVEMENT DISTRICT", "rate": 0.00018}, {"entity_code": 4040, "entity_name": "SOUTH SALT LAKE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 8e-06}, {"entity_code": 3060, "entity_name": "RIVERTON", "rate": 0.0}], "PLEASANT VIEW": [{"entity_code": 4330, "entity_name": "NORTH VIEW FIRE DISTRICT", "rate": 0.001096}, {"entity_code": 3070, "entity_name": "PLEASANT VIEW", "rate": 0.000767}, {"entity_code": 4010, "entity_name": "CENTRAL WEBER SEWER IMPROVEMENT DISTRICT", "rate": 0.00054}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4320, "entity_name": "WEBER AREA DISPATCH 911 AND EMERGENCY SERVICES DISTRICT", "rate": 0.000163}, {"entity_code": 4070, "entity_name": "BONA VISTA WATER IMPROVEMENT DISTRICT", "rate": 0.000145}, {"entity_code": 4080, "entity_name": "WEBER COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 6.4e-05}, {"entity_code": 4020, "entity_name": "BEN LOMOND CEMETERY MAINTENANCE DISTRICT", "rate": 3.7e-05}], "EAGLE MOUNTAIN": [{"entity_code": 4400, "entity_name": "UNIFIED FIRE SERVICE AREA", "rate": 0.00165}, {"entity_code": 3047, "entity_name": "EAGLE MOUNTAIN", "rate": 0.000534}, {"entity_code": 4380, "entity_name": "POLE CANYON BASIC LOCAL DISTRICT", "rate": 0.000417}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}], "WEST BOUNTIFUL": [{"entity_code": 3130, "entity_name": "WEST BOUNTIFUL", "rate": 0.001368}, {"entity_code": 4120, "entity_name": "SOUTH DAVIS METRO FIRE SERVICE AREA", "rate": 0.000538}, {"entity_code": 4055, "entity_name": "SOUTH DAVIS COUNTY SEWER IMPROVEMENT DISTRICT", "rate": 0.000451}, {"entity_code": 4100, "entity_name": "SOUTH DAVIS RECREATION DISTRICT", "rate": 0.000201}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 6000, "entity_name": "ANIMAL WELFARE SERVICES DISTRICT (COUNTY WIDE)", "rate": 9.8e-05}, {"entity_code": 4010, "entity_name": "DAVIS COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.3e-05}, {"entity_code": 4020, "entity_name": "BOUNTIFUL IRRIGATION DISTRICT", "rate": 5.9e-05}], "INTERLAKEN TOWN": [{"entity_code": 3027, "entity_name": "INTERLAKEN TOWN", "rate": 0.001979}, {"entity_code": 4065, "entity_name": "WASATCH COUNTY FIRE PROTECTION SPECIAL SERVICE DISTRICT", "rate": 0.000413}, {"entity_code": 4270, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4090, "entity_name": "WASATCH COUNTY SPECIAL SERVICE DISTRICT NO 21", "rate": 0.000157}, {"entity_code": 4020, "entity_name": "MIDWAY SANITATION DISTRICT", "rate": 2.9e-05}], "ALTA": [{"entity_code": 4320, "entity_name": "UNIFIED FIRE SERVICE AREA", "rate": 0.00165}, {"entity_code": 3010, "entity_name": "ALTA", "rate": 0.000834}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4190, "entity_name": "SALT LAKE COUNTY SERVICE AREA 3 - SNOWBIRD", "rate": 5.9e-05}, {"entity_code": 4040, "entity_name": "SOUTH SALT LAKE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 8e-06}], "CLEVELAND": [{"entity_code": 4020, "entity_name": "CASTLE VALLEY SPECIAL SERVICE DISTRICT", "rate": 0.002079}, {"entity_code": 3030, "entity_name": "CLEVELAND", "rate": 0.00045}, {"entity_code": 4010, "entity_name": "EMERY WATER CONSERVANCY DISTRICT", "rate": 0.000411}], "CLINTON": [{"entity_code": 3040, "entity_name": "CLINTON", "rate": 0.002016}, {"entity_code": 4015, "entity_name": "NORTH DAVIS SEWER DISTRICT", "rate": 0.00032}, {"entity_code": 4075, "entity_name": "HOOPER WATER IMPROVEMENT DISTRICT", "rate": 0.000194}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 6000, "entity_name": "ANIMAL WELFARE SERVICES DISTRICT (COUNTY WIDE)", "rate": 9.8e-05}, {"entity_code": 4010, "entity_name": "DAVIS COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.3e-05}], "TOOELE": [{"entity_code": 3050, "entity_name": "TOOELE", "rate": 0.002476}, {"entity_code": 4110, "entity_name": "NORTH TOOELE CITY SPECIAL SERVICE DISTRICT", "rate": 0.000418}], "STOCKTON": [{"entity_code": 3040, "entity_name": "STOCKTON", "rate": 0.002544}, {"entity_code": 4030, "entity_name": "TOOELE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 0.000236}, {"entity_code": 4070, "entity_name": "RUSH VALLEY WATER CONSERVANCY DISTRICT", "rate": 5.3e-05}], "CENTERVILLE": [{"entity_code": 3020, "entity_name": "CENTERVILLE", "rate": 0.0012}, {"entity_code": 4120, "entity_name": "SOUTH DAVIS METRO FIRE SERVICE AREA", "rate": 0.000538}, {"entity_code": 4055, "entity_name": "SOUTH DAVIS COUNTY SEWER IMPROVEMENT DISTRICT", "rate": 0.000451}, {"entity_code": 4100, "entity_name": "SOUTH DAVIS RECREATION DISTRICT", "rate": 0.000201}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 6000, "entity_name": "ANIMAL WELFARE SERVICES DISTRICT (COUNTY WIDE)", "rate": 9.8e-05}, {"entity_code": 4010, "entity_name": "DAVIS COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.3e-05}, {"entity_code": 4020, "entity_name": "BOUNTIFUL IRRIGATION DISTRICT", "rate": 5.9e-05}], "WENDOVER": [{"entity_code": 3070, "entity_name": "WENDOVER", "rate": 0.002826}], "MOAB CITY": [{"entity_code": 3020, "entity_name": "MOAB CITY", "rate": 0.002167}, {"entity_code": 4040, "entity_name": "MOAB VALLEY FIRE PROTECTION DISTRICT", "rate": 0.00039}, {"entity_code": 4010, "entity_name": "MOAB MOSQUITO ABATEMENT DISTRICT", "rate": 0.000155}, {"entity_code": 4030, "entity_name": "GRAND COUNTY CEMETERY MAINTENANCE DISTRICT", "rate": 0.000113}], "BALLARD": [{"entity_code": 3010, "entity_name": "BALLARD", "rate": 0.001818}, {"entity_code": 4270, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4040, "entity_name": "BALLARD WATER IMPROVEMENT DISTRICT", "rate": 0.000377}, {"entity_code": 4080, "entity_name": "UINTAH COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 0.000184}], "BLANDING": [{"entity_code": 3010, "entity_name": "BLANDING", "rate": 0.001324}, {"entity_code": 4050, "entity_name": "SAN JUAN COUNTY HEALTH SERVICE DISTRICT", "rate": 0.000693}, {"entity_code": 4030, "entity_name": "SAN JUAN COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000542}, {"entity_code": 4020, "entity_name": "BLANDING CEMETERY MAINTENANCE DISTRICT", "rate": 0.000213}], "SANDY CITY": [{"entity_code": 3080, "entity_name": "SANDY CITY", "rate": 0.001049}, {"entity_code": 4200, "entity_name": "COTTONWOOD HEIGHTS PARKS AND RECREATION SERVICE AREA", "rate": 0.000653}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4045, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 4090, "entity_name": "COTTONWOOD IMPROVEMENT DISTRICT", "rate": 0.000278}, {"entity_code": 4040, "entity_name": "SOUTH SALT LAKE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 8e-06}], "CLAWSON": [{"entity_code": 4020, "entity_name": "CASTLE VALLEY SPECIAL SERVICE DISTRICT", "rate": 0.002079}, {"entity_code": 4010, "entity_name": "EMERY WATER CONSERVANCY DISTRICT", "rate": 0.000411}, {"entity_code": 3020, "entity_name": "CLAWSON", "rate": 0.00023}], "GREEN RIVER": [{"entity_code": 3062, "entity_name": "GREEN RIVER", "rate": 0.002706}], "HELPER CITY": [{"entity_code": 3020, "entity_name": "HELPER CITY", "rate": 0.001919}, {"entity_code": 4020, "entity_name": "PRICE RIVER WATER IMPROVEMENT DISTRICT", "rate": 0.00066}, {"entity_code": 4010, "entity_name": "CARBON WATER CONSERVANCY DISTRICT", "rate": 0.000125}], "SYRACUSE": [{"entity_code": 3120, "entity_name": "SYRACUSE", "rate": 0.001981}, {"entity_code": 4015, "entity_name": "NORTH DAVIS SEWER DISTRICT", "rate": 0.00032}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 6000, "entity_name": "ANIMAL WELFARE SERVICES DISTRICT (COUNTY WIDE)", "rate": 9.8e-05}, {"entity_code": 4010, "entity_name": "DAVIS COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.3e-05}], "HOLLADAY CITY": [{"entity_code": 3036, "entity_name": "HOLLADAY CITY", "rate": 0.001334}, {"entity_code": 4200, "entity_name": "COTTONWOOD HEIGHTS PARKS AND RECREATION SERVICE AREA", "rate": 0.000653}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4090, "entity_name": "COTTONWOOD IMPROVEMENT DISTRICT", "rate": 0.000278}, {"entity_code": 4040, "entity_name": "SOUTH SALT LAKE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 8e-06}], "COALVILLE": [{"entity_code": 3010, "entity_name": "COALVILLE", "rate": 0.001206}, {"entity_code": 4030, "entity_name": "NORTH SUMMIT FIRE PROTECTION DISTRICT", "rate": 0.001154}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4335, "entity_name": "NORTH SUMMIT RECREATION SPECIAL SERVICE DISTRICT", "rate": 0.000102}, {"entity_code": 4150, "entity_name": "SUMMIT COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 1.3e-05}], "WASHINGTON TERRACE": [{"entity_code": 3120, "entity_name": "WASHINGTON TERRACE", "rate": 0.001667}, {"entity_code": 4010, "entity_name": "CENTRAL WEBER SEWER IMPROVEMENT DISTRICT", "rate": 0.00054}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4320, "entity_name": "WEBER AREA DISPATCH 911 AND EMERGENCY SERVICES DISTRICT", "rate": 0.000163}, {"entity_code": 4080, "entity_name": "WEBER COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 6.4e-05}], "ROY CITY": [{"entity_code": 3090, "entity_name": "ROY CITY", "rate": 0.001618}, {"entity_code": 4010, "entity_name": "CENTRAL WEBER SEWER IMPROVEMENT DISTRICT", "rate": 0.00054}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4320, "entity_name": "WEBER AREA DISPATCH 911 AND EMERGENCY SERVICES DISTRICT", "rate": 0.000163}, {"entity_code": 4080, "entity_name": "WEBER COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 6.4e-05}, {"entity_code": 4130, "entity_name": "ROY WATER CONSERVANCY SUBDISTRICT", "rate": 4.4e-05}], "SALINA": [{"entity_code": 3100, "entity_name": "SALINA", "rate": 0.002616}], "ROCKVILLE": [{"entity_code": 3075, "entity_name": "ROCKVILLE", "rate": 0.001175}, {"entity_code": 4120, "entity_name": "HURRICANE VALLEY FIRE DISTRICT", "rate": 0.000996}, {"entity_code": 4010, "entity_name": "THE WASHINGTON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000399}, {"entity_code": 4110, "entity_name": "SOUTHWEST MOSQUITO ABATEMENT & CONTROL DISTRICT", "rate": 2.1e-05}], "OGDEN VALLEY CITY (PROPOSED RATE)": [{"entity_code": 4210, "entity_name": "WEBER FIRE DISTRICT", "rate": 0.001083}, {"entity_code": 3199, "entity_name": "OGDEN VALLEY CITY", "rate": 0.000985}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4320, "entity_name": "WEBER AREA DISPATCH 911 AND EMERGENCY SERVICES DISTRICT", "rate": 0.000163}, {"entity_code": 4080, "entity_name": "WEBER COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 6.4e-05}, {"entity_code": 4240, "entity_name": "OGDEN VALLEY PARKS SERVICE AREA", "rate": 6.1e-05}, {"entity_code": 4090, "entity_name": "EDEN CEMETERY MAINTENANCE DISTRICT", "rate": 3.3e-05}, {"entity_code": 6080, "entity_name": "WEBER FIRE DISTRICT - BOND ( est. 1/1/06)", "rate": 0.0}], "UINTAH": [{"entity_code": 4210, "entity_name": "WEBER FIRE DISTRICT", "rate": 0.001083}, {"entity_code": 4010, "entity_name": "CENTRAL WEBER SEWER IMPROVEMENT DISTRICT", "rate": 0.00054}, {"entity_code": 3110, "entity_name": "UINTAH", "rate": 0.000538}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4320, "entity_name": "WEBER AREA DISPATCH 911 AND EMERGENCY SERVICES DISTRICT", "rate": 0.000163}, {"entity_code": 4080, "entity_name": "WEBER COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 6.4e-05}], "MILFORD": [{"entity_code": 3020, "entity_name": "MILFORD", "rate": 0.00112}, {"entity_code": 4030, "entity_name": "MILFORD AREA HEALTH CARE SPECIAL SERVICE DISTRICT NO. 3", "rate": 0.001083}, {"entity_code": 4020, "entity_name": "BEAVER COUNTY SPECIAL SERVICE DISTRICT NO. 2", "rate": 0.000361}], "HOOPER": [{"entity_code": 4210, "entity_name": "WEBER FIRE DISTRICT", "rate": 0.001083}, {"entity_code": 4010, "entity_name": "CENTRAL WEBER SEWER IMPROVEMENT DISTRICT", "rate": 0.00054}, {"entity_code": 3025, "entity_name": "HOOPER", "rate": 0.000283}, {"entity_code": 4150, "entity_name": "HOOPER WATER IMPROVEMENT DISTRICT", "rate": 0.000194}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4320, "entity_name": "WEBER AREA DISPATCH 911 AND EMERGENCY SERVICES DISTRICT", "rate": 0.000163}, {"entity_code": 4080, "entity_name": "WEBER COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 6.4e-05}, {"entity_code": 4130, "entity_name": "ROY WATER CONSERVANCY SUBDISTRICT", "rate": 4.4e-05}, {"entity_code": 6080, "entity_name": "WEBER FIRE DISTRICT - BOND ( est. 1/1/06)", "rate": 0.0}], "FARR WEST CITY": [{"entity_code": 4210, "entity_name": "WEBER FIRE DISTRICT", "rate": 0.001083}, {"entity_code": 4010, "entity_name": "CENTRAL WEBER SEWER IMPROVEMENT DISTRICT", "rate": 0.00054}, {"entity_code": 3010, "entity_name": "FARR WEST CITY", "rate": 0.000327}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4320, "entity_name": "WEBER AREA DISPATCH 911 AND EMERGENCY SERVICES DISTRICT", "rate": 0.000163}, {"entity_code": 4070, "entity_name": "BONA VISTA WATER IMPROVEMENT DISTRICT", "rate": 0.000145}, {"entity_code": 4080, "entity_name": "WEBER COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 6.4e-05}, {"entity_code": 4030, "entity_name": "PLAIN CITY CEMETERY MAINTENANCE DISTRICT", "rate": 4e-05}, {"entity_code": 6080, "entity_name": "WEBER FIRE DISTRICT - BOND ( est. 1/1/06)", "rate": 0.0}], "CITY OF NORTH SALT LAKE": [{"entity_code": 3090, "entity_name": "CITY OF NORTH SALT LAKE", "rate": 0.000855}, {"entity_code": 4120, "entity_name": "SOUTH DAVIS METRO FIRE SERVICE AREA", "rate": 0.000538}, {"entity_code": 4055, "entity_name": "SOUTH DAVIS COUNTY SEWER IMPROVEMENT DISTRICT", "rate": 0.000451}, {"entity_code": 4100, "entity_name": "SOUTH DAVIS RECREATION DISTRICT", "rate": 0.000201}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4030, "entity_name": "SOUTH DAVIS COUNTY WATER IMPROVEMENT DISTRICT", "rate": 0.00012}, {"entity_code": 6000, "entity_name": "ANIMAL WELFARE SERVICES DISTRICT (COUNTY WIDE)", "rate": 9.8e-05}, {"entity_code": 4010, "entity_name": "DAVIS COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.3e-05}], "BOUNTIFUL": [{"entity_code": 3010, "entity_name": "BOUNTIFUL", "rate": 0.000789}, {"entity_code": 4120, "entity_name": "SOUTH DAVIS METRO FIRE SERVICE AREA", "rate": 0.000538}, {"entity_code": 4055, "entity_name": "SOUTH DAVIS COUNTY SEWER IMPROVEMENT DISTRICT", "rate": 0.000451}, {"entity_code": 4100, "entity_name": "SOUTH DAVIS RECREATION DISTRICT", "rate": 0.000201}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4030, "entity_name": "SOUTH DAVIS COUNTY WATER IMPROVEMENT DISTRICT", "rate": 0.00012}, {"entity_code": 6000, "entity_name": "ANIMAL WELFARE SERVICES DISTRICT (COUNTY WIDE)", "rate": 9.8e-05}, {"entity_code": 4010, "entity_name": "DAVIS COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.3e-05}, {"entity_code": 4020, "entity_name": "BOUNTIFUL IRRIGATION DISTRICT", "rate": 5.9e-05}], "DRAPER": [{"entity_code": 3045, "entity_name": "DRAPER", "rate": 0.000936}, {"entity_code": 4305, "entity_name": "TRAVERSE RIDGE SPECIAL SERVICE DISTRICT", "rate": 0.000662}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}, {"entity_code": 4145, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 4320, "entity_name": "JORDAN BASIN IMPROVEMENT DISTRICT", "rate": 0.00018}, {"entity_code": 4080, "entity_name": "NORTH UTAH COUNTY WATER CONSERVANCY DISTRICT", "rate": 1.1e-05}], "DRAPER CITY": [{"entity_code": 3030, "entity_name": "DRAPER CITY", "rate": 0.000936}, {"entity_code": 4310, "entity_name": "TRAVERSE RIDGE SPECIAL SERVICE DISTRICT", "rate": 0.000662}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4045, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 4150, "entity_name": "JORDAN BASIN IMPROVEMENT DISTRICT", "rate": 0.00018}, {"entity_code": 4040, "entity_name": "SOUTH SALT LAKE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 8e-06}], "FRUIT HEIGHTS": [{"entity_code": 3060, "entity_name": "FRUIT HEIGHTS", "rate": 0.001717}, {"entity_code": 4070, "entity_name": "BENCHLAND WATER DISTRICT", "rate": 0.000294}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4050, "entity_name": "CENTRAL DAVIS COUNTY SEWER DISTRICT", "rate": 0.000106}, {"entity_code": 6000, "entity_name": "ANIMAL WELFARE SERVICES DISTRICT (COUNTY WIDE)", "rate": 9.8e-05}, {"entity_code": 4010, "entity_name": "DAVIS COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.3e-05}], "FARMINGTON": [{"entity_code": 3050, "entity_name": "FARMINGTON", "rate": 0.00166}, {"entity_code": 4070, "entity_name": "BENCHLAND WATER DISTRICT", "rate": 0.000294}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4050, "entity_name": "CENTRAL DAVIS COUNTY SEWER DISTRICT", "rate": 0.000106}, {"entity_code": 6000, "entity_name": "ANIMAL WELFARE SERVICES DISTRICT (COUNTY WIDE)", "rate": 9.8e-05}, {"entity_code": 4010, "entity_name": "DAVIS COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.3e-05}], "PERRY CITY": [{"entity_code": 3110, "entity_name": "PERRY CITY", "rate": 0.001801}, {"entity_code": 4190, "entity_name": "BEAR RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000225}, {"entity_code": 4010, "entity_name": "BOX ELDER MOSQUITO ABATEMENT DISTRICT", "rate": 0.000172}, {"entity_code": 4180, "entity_name": "BOX ELDER COUNTY & PERRY CITY FLOOD CONTROL", "rate": 0.000146}, {"entity_code": 4080, "entity_name": "WILLARD PRECINCT CEMETERY MAINTENANCE DISTRICT", "rate": 9.5e-05}], "ROOSEVELT": [{"entity_code": 3040, "entity_name": "ROOSEVELT", "rate": 0.001731}, {"entity_code": 4220, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4080, "entity_name": "DUCHESNE COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000199}, {"entity_code": 4010, "entity_name": "DUCHESNE COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.2e-05}], "RIVERDALE": [{"entity_code": 3080, "entity_name": "RIVERDALE", "rate": 0.001414}, {"entity_code": 4010, "entity_name": "CENTRAL WEBER SEWER IMPROVEMENT DISTRICT", "rate": 0.00054}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4320, "entity_name": "WEBER AREA DISPATCH 911 AND EMERGENCY SERVICES DISTRICT", "rate": 0.000163}, {"entity_code": 4080, "entity_name": "WEBER COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 6.4e-05}, {"entity_code": 4130, "entity_name": "ROY WATER CONSERVANCY SUBDISTRICT", "rate": 4.4e-05}], "TOQUERVILLE CITY": [{"entity_code": 4120, "entity_name": "HURRICANE VALLEY FIRE DISTRICT", "rate": 0.000996}, {"entity_code": 3110, "entity_name": "TOQUERVILLE CITY", "rate": 0.000962}, {"entity_code": 4010, "entity_name": "THE WASHINGTON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000399}, {"entity_code": 4110, "entity_name": "SOUTHWEST MOSQUITO ABATEMENT & CONTROL DISTRICT", "rate": 2.1e-05}], "ALTON": [{"entity_code": 3010, "entity_name": "ALTON", "rate": 0.002023}, {"entity_code": 4050, "entity_name": "KANE COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000354}], "SOUTH WEBER": [{"entity_code": 3100, "entity_name": "SOUTH WEBER", "rate": 0.001434}, {"entity_code": 4073, "entity_name": "CENTRAL WEBER SEWER IMPROVEMENT DISTRICT", "rate": 0.00054}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 6000, "entity_name": "ANIMAL WELFARE SERVICES DISTRICT (COUNTY WIDE)", "rate": 9.8e-05}, {"entity_code": 4010, "entity_name": "DAVIS COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.3e-05}], "MARRIOTT-SLATERVILLE CITY": [{"entity_code": 4210, "entity_name": "WEBER FIRE DISTRICT", "rate": 0.001083}, {"entity_code": 4010, "entity_name": "CENTRAL WEBER SEWER IMPROVEMENT DISTRICT", "rate": 0.00054}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4340, "entity_name": "TAYLOR WEST WEBER PARK DISTRICT", "rate": 0.000167}, {"entity_code": 4320, "entity_name": "WEBER AREA DISPATCH 911 AND EMERGENCY SERVICES DISTRICT", "rate": 0.000163}, {"entity_code": 4070, "entity_name": "BONA VISTA WATER IMPROVEMENT DISTRICT", "rate": 0.000145}, {"entity_code": 4080, "entity_name": "WEBER COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 6.4e-05}, {"entity_code": 3035, "entity_name": "MARRIOTT-SLATERVILLE CITY", "rate": 0.0}, {"entity_code": 6080, "entity_name": "WEBER FIRE DISTRICT - BOND ( est. 1/1/06)", "rate": 0.0}], "SANTAQUIN CITY": [{"entity_code": 3090, "entity_name": "SANTAQUIN CITY", "rate": 0.001409}, {"entity_code": 4015, "entity_name": "JUAB COUNTY FIRE PROTECTION SPECIAL SERVICE DISTRICT", "rate": 0.000429}, {"entity_code": 4270, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4010, "entity_name": "EAST JUAB COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000113}], "BRIAN HEAD CITY": [{"entity_code": 3010, "entity_name": "BRIAN HEAD CITY", "rate": 0.002328}], "WEST HAVEN": [{"entity_code": 4210, "entity_name": "WEBER FIRE DISTRICT", "rate": 0.001083}, {"entity_code": 4010, "entity_name": "CENTRAL WEBER SEWER IMPROVEMENT DISTRICT", "rate": 0.00054}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4340, "entity_name": "TAYLOR WEST WEBER PARK DISTRICT", "rate": 0.000167}, {"entity_code": 4320, "entity_name": "WEBER AREA DISPATCH 911 AND EMERGENCY SERVICES DISTRICT", "rate": 0.000163}, {"entity_code": 4040, "entity_name": "WEST WEBER-TAYLOR CEMETERY MAINTENANCE DISTRICT", "rate": 9.1e-05}, {"entity_code": 4080, "entity_name": "WEBER COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 6.4e-05}, {"entity_code": 3130, "entity_name": "WEST HAVEN", "rate": 0.0}, {"entity_code": 6080, "entity_name": "WEBER FIRE DISTRICT - BOND ( est. 1/1/06)", "rate": 0.0}], "LA VERKIN CITY": [{"entity_code": 4120, "entity_name": "HURRICANE VALLEY FIRE DISTRICT", "rate": 0.000996}, {"entity_code": 3050, "entity_name": "LA VERKIN CITY", "rate": 0.000877}, {"entity_code": 4010, "entity_name": "THE WASHINGTON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000399}, {"entity_code": 4110, "entity_name": "SOUTHWEST MOSQUITO ABATEMENT & CONTROL DISTRICT", "rate": 2.1e-05}], "MANTUA TOWN": [{"entity_code": 3100, "entity_name": "MANTUA TOWN", "rate": 0.001876}, {"entity_code": 4190, "entity_name": "BEAR RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000225}, {"entity_code": 4010, "entity_name": "BOX ELDER MOSQUITO ABATEMENT DISTRICT", "rate": 0.000172}], "SOUTH JORDAN": [{"entity_code": 3090, "entity_name": "SOUTH JORDAN", "rate": 0.001313}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4045, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 4150, "entity_name": "JORDAN BASIN IMPROVEMENT DISTRICT", "rate": 0.00018}, {"entity_code": 4160, "entity_name": "CRESCENT CEMETERY MAINTENANCE DISTRICT", "rate": 2.1e-05}, {"entity_code": 4040, "entity_name": "SOUTH SALT LAKE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 8e-06}], "LAKE POINT": [{"entity_code": 3015, "entity_name": "LAKE POINT", "rate": 0.000881}, {"entity_code": 4090, "entity_name": "NORTH TOOELE FIRE PROTECTION SERVICE DISTRICT", "rate": 0.000871}, {"entity_code": 4030, "entity_name": "TOOELE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 0.000236}, {"entity_code": 4100, "entity_name": "LAKEPOINT CEMETERY & PARK SERVICE AREA", "rate": 0.000184}, {"entity_code": 4020, "entity_name": "LAKEPOINT IMPROVEMENT DISTRICT", "rate": 8e-05}], "DUTCH JOHN": [{"entity_code": 3005, "entity_name": "DUTCH JOHN", "rate": 0.002239}], "KAYSVILLE": [{"entity_code": 3070, "entity_name": "KAYSVILLE", "rate": 0.001455}, {"entity_code": 4070, "entity_name": "BENCHLAND WATER DISTRICT", "rate": 0.000294}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4050, "entity_name": "CENTRAL DAVIS COUNTY SEWER DISTRICT", "rate": 0.000106}, {"entity_code": 6000, "entity_name": "ANIMAL WELFARE SERVICES DISTRICT (COUNTY WIDE)", "rate": 9.8e-05}, {"entity_code": 4010, "entity_name": "DAVIS COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.3e-05}], "HURRICANE CITY": [{"entity_code": 4120, "entity_name": "HURRICANE VALLEY FIRE DISTRICT", "rate": 0.000996}, {"entity_code": 3030, "entity_name": "HURRICANE CITY", "rate": 0.000816}, {"entity_code": 4010, "entity_name": "THE WASHINGTON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000399}, {"entity_code": 4110, "entity_name": "SOUTHWEST MOSQUITO ABATEMENT & CONTROL DISTRICT", "rate": 2.1e-05}], "BRIGHAM CITY": [{"entity_code": 3020, "entity_name": "BRIGHAM CITY", "rate": 0.001685}, {"entity_code": 4190, "entity_name": "BEAR RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000225}, {"entity_code": 4010, "entity_name": "BOX ELDER MOSQUITO ABATEMENT DISTRICT", "rate": 0.000172}, {"entity_code": 4180, "entity_name": "BOX ELDER COUNTY & PERRY CITY FLOOD CONTROL", "rate": 0.000146}], "PAROWAN": [{"entity_code": 3060, "entity_name": "PAROWAN", "rate": 0.002191}], "WASHINGTON CITY": [{"entity_code": 4100, "entity_name": "CORAL CANYON SPECIAL SERVICE DISTRICT", "rate": 0.001021}, {"entity_code": 3130, "entity_name": "WASHINGTON CITY", "rate": 0.000747}, {"entity_code": 4010, "entity_name": "THE WASHINGTON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000399}, {"entity_code": 4110, "entity_name": "SOUTHWEST MOSQUITO ABATEMENT & CONTROL DISTRICT", "rate": 2.1e-05}], "HUNTSVILLE": [{"entity_code": 4210, "entity_name": "WEBER FIRE DISTRICT", "rate": 0.001083}, {"entity_code": 3030, "entity_name": "HUNTSVILLE", "rate": 0.00061}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4320, "entity_name": "WEBER AREA DISPATCH 911 AND EMERGENCY SERVICES DISTRICT", "rate": 0.000163}, {"entity_code": 4080, "entity_name": "WEBER COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 6.4e-05}, {"entity_code": 6080, "entity_name": "WEBER FIRE DISTRICT - BOND ( est. 1/1/06)", "rate": 0.0}], "MINERSVILLE": [{"entity_code": 4030, "entity_name": "MILFORD AREA HEALTH CARE SPECIAL SERVICE DISTRICT NO. 3", "rate": 0.001083}, {"entity_code": 3030, "entity_name": "MINERSVILLE", "rate": 0.000663}, {"entity_code": 4020, "entity_name": "BEAVER COUNTY SPECIAL SERVICE DISTRICT NO. 2", "rate": 0.000361}], "WILLARD CITY": [{"entity_code": 3160, "entity_name": "WILLARD CITY", "rate": 0.001258}, {"entity_code": 4190, "entity_name": "BEAR RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000225}, {"entity_code": 4095, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4010, "entity_name": "BOX ELDER MOSQUITO ABATEMENT DISTRICT", "rate": 0.000172}, {"entity_code": 4150, "entity_name": "BOX ELDER COUNTY AND WILLARD CITY FLOOD CONTROL AND DRAINAGE", "rate": 0.000151}, {"entity_code": 4080, "entity_name": "WILLARD PRECINCT CEMETERY MAINTENANCE DISTRICT", "rate": 9.5e-05}], "TABIONA": [{"entity_code": 3050, "entity_name": "TABIONA", "rate": 0.000944}, {"entity_code": 4085, "entity_name": "TABBY VALLEY PARKS & RECREATION SPECIAL SERVICE DISTRICT", "rate": 0.000456}, {"entity_code": 4220, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4080, "entity_name": "DUCHESNE COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000199}, {"entity_code": 4010, "entity_name": "DUCHESNE COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.2e-05}], "FRANCIS": [{"entity_code": 3020, "entity_name": "FRANCIS", "rate": 0.001052}, {"entity_code": 4020, "entity_name": "SOUTH SUMMIT FIRE PROTECTION DISTRICT", "rate": 0.000546}, {"entity_code": 4270, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4010, "entity_name": "SOUTH SUMMIT CEMETERY MAINTENANCE DISTRICT", "rate": 7.5e-05}, {"entity_code": 4150, "entity_name": "SUMMIT COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 1.3e-05}], "PROVO": [{"entity_code": 3150, "entity_name": "PROVO", "rate": 0.001678}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}], "PRICE": [{"entity_code": 3030, "entity_name": "PRICE", "rate": 0.00129}, {"entity_code": 4020, "entity_name": "PRICE RIVER WATER IMPROVEMENT DISTRICT", "rate": 0.00066}, {"entity_code": 4010, "entity_name": "CARBON WATER CONSERVANCY DISTRICT", "rate": 0.000125}], "DELTA CITY": [{"entity_code": 3010, "entity_name": "DELTA CITY", "rate": 0.001222}, {"entity_code": 4040, "entity_name": "WEST MILLARD MOSQUITO ABATEMENT DISTRICT", "rate": 0.00042}, {"entity_code": 4090, "entity_name": "MILLARD COUNTY FIRE SERVICE DISTRICT", "rate": 0.000247}, {"entity_code": 4010, "entity_name": "DELTA, SUTHERLAND, OASIS CEMETERY MAINTENANCE DISTRICT", "rate": 0.000179}], "LYNNDYL": [{"entity_code": 3070, "entity_name": "LYNNDYL", "rate": 0.001393}, {"entity_code": 4040, "entity_name": "WEST MILLARD MOSQUITO ABATEMENT DISTRICT", "rate": 0.00042}, {"entity_code": 4090, "entity_name": "MILLARD COUNTY FIRE SERVICE DISTRICT", "rate": 0.000247}], "KANAB CITY": [{"entity_code": 3040, "entity_name": "KANAB CITY", "rate": 0.0017}, {"entity_code": 4050, "entity_name": "KANE COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000354}], "ERDA": [{"entity_code": 3005, "entity_name": "ERDA", "rate": 0.000877}, {"entity_code": 4090, "entity_name": "NORTH TOOELE FIRE PROTECTION SERVICE DISTRICT", "rate": 0.000871}, {"entity_code": 4030, "entity_name": "TOOELE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 0.000236}, {"entity_code": 4010, "entity_name": "STANSBURY PARK IMPROVEMENT DISTRICT", "rate": 5.6e-05}], "ROCKY RIDGE TOWN": [{"entity_code": 3080, "entity_name": "ROCKY RIDGE TOWN", "rate": 0.001035}, {"entity_code": 4015, "entity_name": "JUAB COUNTY FIRE PROTECTION SPECIAL SERVICE DISTRICT", "rate": 0.000429}, {"entity_code": 4270, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4010, "entity_name": "EAST JUAB COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000113}], "MYTON": [{"entity_code": 3030, "entity_name": "MYTON", "rate": 0.001282}, {"entity_code": 4220, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4080, "entity_name": "DUCHESNE COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000199}, {"entity_code": 4010, "entity_name": "DUCHESNE COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.2e-05}], "CHARLESTON": [{"entity_code": 3010, "entity_name": "CHARLESTON", "rate": 0.000984}, {"entity_code": 4065, "entity_name": "WASATCH COUNTY FIRE PROTECTION SPECIAL SERVICE DISTRICT", "rate": 0.000413}, {"entity_code": 4270, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4090, "entity_name": "WASATCH COUNTY SPECIAL SERVICE DISTRICT NO 21", "rate": 0.000157}, {"entity_code": 4010, "entity_name": "CHARLESTON WATER CONSERVANCY DISTRICT", "rate": 1.7e-05}], "PARK CITY": [{"entity_code": 3060, "entity_name": "PARK CITY", "rate": 0.000815}, {"entity_code": 4310, "entity_name": "SNYDERVILLE BASIN RECREATION DISTRICT", "rate": 0.000405}, {"entity_code": 4060, "entity_name": "PARK CITY FIRE SERVICE DISTRICT", "rate": 0.000335}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 6030, "entity_name": "BOND A -AREA EXCLUDED FROM SNYDERVILLE BASIN RECREATION DIST, STILL LIABLE FOR BOND", "rate": 0.000114}, {"entity_code": 6031, "entity_name": "BOND B - AREA EXCLUDED FROM SNYDERVILLE BASIN RECREATION DIST, STILL LIABLE FOR BOND", "rate": 6.6e-05}, {"entity_code": 4360, "entity_name": "SNYDERVILLE BASIN CEMETERY", "rate": 2.2e-05}, {"entity_code": 4150, "entity_name": "SUMMIT COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 1.3e-05}], "AMERICAN FORK": [{"entity_code": 3020, "entity_name": "AMERICAN FORK", "rate": 0.001532}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}, {"entity_code": 4080, "entity_name": "NORTH UTAH COUNTY WATER CONSERVANCY DISTRICT", "rate": 1.1e-05}], "CEDAR CITY": [{"entity_code": 3020, "entity_name": "CEDAR CITY", "rate": 0.001583}, {"entity_code": 4015, "entity_name": "CENTRAL IRON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000349}], "WOODRUFF": [{"entity_code": 4080, "entity_name": "WOODRUFF FIRE DISTRICT", "rate": 0.000933}, {"entity_code": 4040, "entity_name": "WOODRUFF CEMETERY MAINTENANCE DISTRICT", "rate": 0.000513}, {"entity_code": 3040, "entity_name": "WOODRUFF", "rate": 0.000468}], "HENEFER": [{"entity_code": 4030, "entity_name": "NORTH SUMMIT FIRE PROTECTION DISTRICT", "rate": 0.001154}, {"entity_code": 3030, "entity_name": "HENEFER", "rate": 0.00045}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4335, "entity_name": "NORTH SUMMIT RECREATION SPECIAL SERVICE DISTRICT", "rate": 0.000102}, {"entity_code": 4150, "entity_name": "SUMMIT COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 1.3e-05}], "CORINNE CITY": [{"entity_code": 3030, "entity_name": "CORINNE CITY", "rate": 0.001396}, {"entity_code": 4190, "entity_name": "BEAR RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000225}, {"entity_code": 4010, "entity_name": "BOX ELDER MOSQUITO ABATEMENT DISTRICT", "rate": 0.000172}, {"entity_code": 4100, "entity_name": "CORINNE CEMETERY MAINTENANCE DISTRICT", "rate": 0.000111}], "MAPLETON": [{"entity_code": 3110, "entity_name": "MAPLETON", "rate": 0.001456}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}], "LAYTON": [{"entity_code": 3080, "entity_name": "LAYTON", "rate": 0.001143}, {"entity_code": 4015, "entity_name": "NORTH DAVIS SEWER DISTRICT", "rate": 0.00032}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 6000, "entity_name": "ANIMAL WELFARE SERVICES DISTRICT (COUNTY WIDE)", "rate": 9.8e-05}, {"entity_code": 4010, "entity_name": "DAVIS COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.3e-05}], "VIRGIN TOWN": [{"entity_code": 4120, "entity_name": "HURRICANE VALLEY FIRE DISTRICT", "rate": 0.000996}, {"entity_code": 3120, "entity_name": "VIRGIN TOWN", "rate": 0.000422}, {"entity_code": 4010, "entity_name": "THE WASHINGTON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000399}, {"entity_code": 4110, "entity_name": "SOUTHWEST MOSQUITO ABATEMENT & CONTROL DISTRICT", "rate": 2.1e-05}], "LEWISTON": [{"entity_code": 3060, "entity_name": "LEWISTON", "rate": 0.001617}, {"entity_code": 4070, "entity_name": "RICHMOND CEMETERY MAINTENANCE DISTRICT", "rate": 0.00013}, {"entity_code": 4090, "entity_name": "CACHE MOSQUITO ABATEMENT DISTRICT", "rate": 4.7e-05}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "MORONI": [{"entity_code": 3090, "entity_name": "MORONI", "rate": 0.001484}, {"entity_code": 4010, "entity_name": "SANPETE WATER CONSERVANCY DISTRICT", "rate": 0.000342}], "CANNONVILLE": [{"entity_code": 3030, "entity_name": "CANNONVILLE", "rate": 0.00161}, {"entity_code": 4060, "entity_name": "CANNONVILLE CEMETERY MAINTENANCE DISTRICT", "rate": 0.000207}], "CORNISH": [{"entity_code": 3030, "entity_name": "CORNISH", "rate": 0.001297}, {"entity_code": 4010, "entity_name": "CORNISH CEMETERY MAINTENANCE DISTRICT", "rate": 0.000436}, {"entity_code": 4090, "entity_name": "CACHE MOSQUITO ABATEMENT DISTRICT", "rate": 4.7e-05}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "RICHFIELD CITY": [{"entity_code": 3090, "entity_name": "RICHFIELD CITY", "rate": 0.001809}], "SANTAQUIN": [{"entity_code": 3170, "entity_name": "SANTAQUIN", "rate": 0.001409}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}], "BLUFFDALE": [{"entity_code": 3020, "entity_name": "BLUFFDALE", "rate": 0.000866}, {"entity_code": 4185, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4045, "entity_name": "JORDAN VALLEY WATER CONSERVANCY DISTRICT", "rate": 0.00034}, {"entity_code": 4150, "entity_name": "JORDAN BASIN IMPROVEMENT DISTRICT", "rate": 0.00018}, {"entity_code": 4040, "entity_name": "SOUTH SALT LAKE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 8e-06}], "HATCH": [{"entity_code": 3050, "entity_name": "HATCH", "rate": 0.001445}, {"entity_code": 4030, "entity_name": "HATCH TOWN CEMETERY MAINTENANCE DISTRICT", "rate": 0.000219}, {"entity_code": 4100, "entity_name": "UPPER SEVIER RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000123}], "ORDERVILLE": [{"entity_code": 3050, "entity_name": "ORDERVILLE", "rate": 0.001432}, {"entity_code": 4050, "entity_name": "KANE COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000354}], "ESCALANTE": [{"entity_code": 3040, "entity_name": "ESCALANTE", "rate": 0.001503}, {"entity_code": 4080, "entity_name": "ESCALANTE CEMETERY MAINTENANCE DISTRICT", "rate": 0.000282}], "HIDEOUT TOWN": [{"entity_code": 3025, "entity_name": "HIDEOUT TOWN", "rate": 0.000625}, {"entity_code": 4065, "entity_name": "WASATCH COUNTY FIRE PROTECTION SPECIAL SERVICE DISTRICT", "rate": 0.000413}, {"entity_code": 4270, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4150, "entity_name": "HIDEOUT LOCAL DISTRICT NO 1", "rate": 0.00019}, {"entity_code": 4090, "entity_name": "WASATCH COUNTY SPECIAL SERVICE DISTRICT NO 21", "rate": 0.000157}], "BLUFF": [{"entity_code": 4050, "entity_name": "SAN JUAN COUNTY HEALTH SERVICE DISTRICT", "rate": 0.000693}, {"entity_code": 3015, "entity_name": "BLUFF", "rate": 0.000543}, {"entity_code": 4030, "entity_name": "SAN JUAN COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000542}], "OAKLEY": [{"entity_code": 3050, "entity_name": "OAKLEY", "rate": 0.000949}, {"entity_code": 4020, "entity_name": "SOUTH SUMMIT FIRE PROTECTION DISTRICT", "rate": 0.000546}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4010, "entity_name": "SOUTH SUMMIT CEMETERY MAINTENANCE DISTRICT", "rate": 7.5e-05}, {"entity_code": 4150, "entity_name": "SUMMIT COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 1.3e-05}], "SPRINGVILLE": [{"entity_code": 3190, "entity_name": "SPRINGVILLE", "rate": 0.001079}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}, {"entity_code": 4355, "entity_name": "SPRINGVILLE DRAINAGE DISTRICT", "rate": 0.000286}], "OGDEN VALLEY CITY (2025 RATE)": [{"entity_code": 4210, "entity_name": "WEBER FIRE DISTRICT", "rate": 0.001083}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4320, "entity_name": "WEBER AREA DISPATCH 911 AND EMERGENCY SERVICES DISTRICT", "rate": 0.000163}, {"entity_code": 6090, "entity_name": "MUNICIPAL TYPE SERVICES", "rate": 0.000159}, {"entity_code": 4080, "entity_name": "WEBER COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 6.4e-05}, {"entity_code": 4240, "entity_name": "OGDEN VALLEY PARKS SERVICE AREA", "rate": 6.1e-05}, {"entity_code": 4090, "entity_name": "EDEN CEMETERY MAINTENANCE DISTRICT", "rate": 3.3e-05}, {"entity_code": 6080, "entity_name": "WEBER FIRE DISTRICT - BOND ( est. 1/1/06)", "rate": 0.0}], "HEBER CITY": [{"entity_code": 3020, "entity_name": "HEBER CITY", "rate": 0.00077}, {"entity_code": 4065, "entity_name": "WASATCH COUNTY FIRE PROTECTION SPECIAL SERVICE DISTRICT", "rate": 0.000413}, {"entity_code": 4270, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4090, "entity_name": "WASATCH COUNTY SPECIAL SERVICE DISTRICT NO 21", "rate": 0.000157}], "GUNNISON": [{"entity_code": 3060, "entity_name": "GUNNISON", "rate": 0.001383}, {"entity_code": 4010, "entity_name": "SANPETE WATER CONSERVANCY DISTRICT", "rate": 0.000342}], "MOUNT PLEASANT CITY": [{"entity_code": 3100, "entity_name": "MOUNT PLEASANT CITY", "rate": 0.00138}, {"entity_code": 4010, "entity_name": "SANPETE WATER CONSERVANCY DISTRICT", "rate": 0.000342}], "MAYFIELD": [{"entity_code": 3080, "entity_name": "MAYFIELD", "rate": 0.001371}, {"entity_code": 4010, "entity_name": "SANPETE WATER CONSERVANCY DISTRICT", "rate": 0.000342}], "EUREKA": [{"entity_code": 3010, "entity_name": "EUREKA", "rate": 0.000878}, {"entity_code": 4015, "entity_name": "JUAB COUNTY FIRE PROTECTION SPECIAL SERVICE DISTRICT", "rate": 0.000429}, {"entity_code": 4270, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}], "PAYSON": [{"entity_code": 3130, "entity_name": "PAYSON", "rate": 0.001299}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}], "MANILA": [{"entity_code": 3010, "entity_name": "MANILA", "rate": 0.00092}, {"entity_code": 4030, "entity_name": "FLAMING GORGE FIRE & EMS DISTRICT", "rate": 0.00057}, {"entity_code": 4020, "entity_name": "DAGGETT COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 0.000188}], "SPANISH FORK": [{"entity_code": 3180, "entity_name": "SPANISH FORK", "rate": 0.000986}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}, {"entity_code": 4355, "entity_name": "SPRINGVILLE DRAINAGE DISTRICT", "rate": 0.000286}], "MIDWAY": [{"entity_code": 3030, "entity_name": "MIDWAY", "rate": 0.00064}, {"entity_code": 4065, "entity_name": "WASATCH COUNTY FIRE PROTECTION SPECIAL SERVICE DISTRICT", "rate": 0.000413}, {"entity_code": 4270, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4090, "entity_name": "WASATCH COUNTY SPECIAL SERVICE DISTRICT NO 21", "rate": 0.000157}, {"entity_code": 4020, "entity_name": "MIDWAY SANITATION DISTRICT", "rate": 2.9e-05}], "ALPINE": [{"entity_code": 3010, "entity_name": "ALPINE", "rate": 0.001201}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}, {"entity_code": 4080, "entity_name": "NORTH UTAH COUNTY WATER CONSERVANCY DISTRICT", "rate": 1.1e-05}], "SALEM": [{"entity_code": 3160, "entity_name": "SALEM", "rate": 0.001144}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}, {"entity_code": 4070, "entity_name": "BENJAMIN CEMETERY MAINTENANCE DISTRICT", "rate": 6.8e-05}], "GRANTSVILLE": [{"entity_code": 3010, "entity_name": "GRANTSVILLE", "rate": 0.001368}, {"entity_code": 4030, "entity_name": "TOOELE VALLEY MOSQUITO ABATEMENT DISTRICT", "rate": 0.000236}], "VERNAL": [{"entity_code": 3030, "entity_name": "VERNAL", "rate": 0.000506}, {"entity_code": 4270, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4010, "entity_name": "UINTAH WATER CONSERVANCY DISTRICT", "rate": 0.000399}, {"entity_code": 4080, "entity_name": "UINTAH COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 0.000184}, {"entity_code": 4060, "entity_name": "ASHLEY VALLEY WATER & SEWER IMPROVEMENT DISTRICT", "rate": 0.000114}], "GLENDALE": [{"entity_code": 3030, "entity_name": "GLENDALE", "rate": 0.001243}, {"entity_code": 4050, "entity_name": "KANE COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000354}], "IVINS TOWN": [{"entity_code": 3040, "entity_name": "IVINS TOWN", "rate": 0.001174}, {"entity_code": 4010, "entity_name": "THE WASHINGTON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000399}, {"entity_code": 4110, "entity_name": "SOUTHWEST MOSQUITO ABATEMENT & CONTROL DISTRICT", "rate": 2.1e-05}], "PLEASANT GROVE": [{"entity_code": 3140, "entity_name": "PLEASANT GROVE", "rate": 0.001179}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}, {"entity_code": 4080, "entity_name": "NORTH UTAH COUNTY WATER CONSERVANCY DISTRICT", "rate": 1.1e-05}], "SPRINGDALE": [{"entity_code": 4120, "entity_name": "HURRICANE VALLEY FIRE DISTRICT", "rate": 0.000996}, {"entity_code": 4010, "entity_name": "THE WASHINGTON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000399}, {"entity_code": 3100, "entity_name": "SPRINGDALE", "rate": 0.000165}, {"entity_code": 4110, "entity_name": "SOUTHWEST MOSQUITO ABATEMENT & CONTROL DISTRICT", "rate": 2.1e-05}], "LEHI": [{"entity_code": 3090, "entity_name": "LEHI", "rate": 0.001163}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}, {"entity_code": 4080, "entity_name": "NORTH UTAH COUNTY WATER CONSERVANCY DISTRICT", "rate": 1.1e-05}, {"entity_code": 4020, "entity_name": "LEHI METROPOLITAN WATER DISTRICT", "rate": 6e-06}], "KAMAS": [{"entity_code": 3040, "entity_name": "KAMAS", "rate": 0.000754}, {"entity_code": 4020, "entity_name": "SOUTH SUMMIT FIRE PROTECTION DISTRICT", "rate": 0.000546}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4010, "entity_name": "SOUTH SUMMIT CEMETERY MAINTENANCE DISTRICT", "rate": 7.5e-05}, {"entity_code": 4150, "entity_name": "SUMMIT COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 1.3e-05}], "DUCHESNE": [{"entity_code": 3020, "entity_name": "DUCHESNE", "rate": 0.000873}, {"entity_code": 4220, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4080, "entity_name": "DUCHESNE COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000199}, {"entity_code": 4010, "entity_name": "DUCHESNE COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.2e-05}], "ENTERPRISE": [{"entity_code": 3010, "entity_name": "ENTERPRISE", "rate": 0.001113}, {"entity_code": 4010, "entity_name": "THE WASHINGTON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000399}, {"entity_code": 4110, "entity_name": "SOUTHWEST MOSQUITO ABATEMENT & CONTROL DISTRICT", "rate": 2.1e-05}], "HILDALE CITY": [{"entity_code": 3020, "entity_name": "HILDALE CITY", "rate": 0.001111}, {"entity_code": 4010, "entity_name": "THE WASHINGTON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000399}, {"entity_code": 4110, "entity_name": "SOUTHWEST MOSQUITO ABATEMENT & CONTROL DISTRICT", "rate": 2.1e-05}], "MENDON": [{"entity_code": 3080, "entity_name": "MENDON", "rate": 0.00144}, {"entity_code": 4090, "entity_name": "CACHE MOSQUITO ABATEMENT DISTRICT", "rate": 4.7e-05}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "CIRCLEVILLE": [{"entity_code": 3010, "entity_name": "CIRCLEVILLE", "rate": 0.001398}, {"entity_code": 4010, "entity_name": "UPPER SEVIER RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000123}], "NIBLEY": [{"entity_code": 3110, "entity_name": "NIBLEY", "rate": 0.00138}, {"entity_code": 4090, "entity_name": "CACHE MOSQUITO ABATEMENT DISTRICT", "rate": 4.7e-05}, {"entity_code": 4030, "entity_name": "MILLVILLE-NIBLEY CEMETERY MAINTENANCE DISTRICT", "rate": 4.6e-05}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "NEW HARMONY": [{"entity_code": 3070, "entity_name": "NEW HARMONY", "rate": 0.000629}, {"entity_code": 4090, "entity_name": "NEW HARMONY VALLEY SPECIAL SERVICE DISTRICT", "rate": 0.000445}, {"entity_code": 4010, "entity_name": "THE WASHINGTON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000399}, {"entity_code": 4110, "entity_name": "SOUTHWEST MOSQUITO ABATEMENT & CONTROL DISTRICT", "rate": 2.1e-05}], "ENOCH": [{"entity_code": 3030, "entity_name": "ENOCH", "rate": 0.001141}, {"entity_code": 4015, "entity_name": "CENTRAL IRON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000349}], "MORGAN": [{"entity_code": 3010, "entity_name": "MORGAN", "rate": 0.001297}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}], "EPHRAIM": [{"entity_code": 3020, "entity_name": "EPHRAIM", "rate": 0.001132}, {"entity_code": 4010, "entity_name": "SANPETE WATER CONSERVANCY DISTRICT", "rate": 0.000342}], "FAIRFIELD": [{"entity_code": 3055, "entity_name": "FAIRFIELD", "rate": 0.000655}, {"entity_code": 4380, "entity_name": "POLE CANYON BASIC LOCAL DISTRICT", "rate": 0.000417}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}], "CEDAR HILLS": [{"entity_code": 3040, "entity_name": "CEDAR HILLS", "rate": 0.001043}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}, {"entity_code": 4080, "entity_name": "NORTH UTAH COUNTY WATER CONSERVANCY DISTRICT", "rate": 1.1e-05}], "NEPHI CITY": [{"entity_code": 3040, "entity_name": "NEPHI CITY", "rate": 0.000504}, {"entity_code": 4015, "entity_name": "JUAB COUNTY FIRE PROTECTION SPECIAL SERVICE DISTRICT", "rate": 0.000429}, {"entity_code": 4270, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4010, "entity_name": "EAST JUAB COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000113}], "SMITHFIELD": [{"entity_code": 3170, "entity_name": "SMITHFIELD", "rate": 0.001352}, {"entity_code": 4090, "entity_name": "CACHE MOSQUITO ABATEMENT DISTRICT", "rate": 4.7e-05}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "FOUNTAIN GREEN": [{"entity_code": 3050, "entity_name": "FOUNTAIN GREEN", "rate": 0.001088}, {"entity_code": 4010, "entity_name": "SANPETE WATER CONSERVANCY DISTRICT", "rate": 0.000342}], "ALTAMONT": [{"entity_code": 3010, "entity_name": "ALTAMONT", "rate": 0.000503}, {"entity_code": 4220, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4103, "entity_name": "UPPER COMMUNITY RECREATION DISTRICT", "rate": 0.000228}, {"entity_code": 4080, "entity_name": "DUCHESNE COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000199}, {"entity_code": 4010, "entity_name": "DUCHESNE COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 9.2e-05}], "ELK RIDGE": [{"entity_code": 3050, "entity_name": "ELK RIDGE", "rate": 0.00102}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}], "KANARRAVILLE": [{"entity_code": 3040, "entity_name": "KANARRAVILLE", "rate": 0.001069}, {"entity_code": 4015, "entity_name": "CENTRAL IRON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000349}], "PORTAGE": [{"entity_code": 3130, "entity_name": "PORTAGE", "rate": 0.00065}, {"entity_code": 4060, "entity_name": "PORTAGE PRECINCT CEMETERY MAINTENANCE DISTRICT", "rate": 0.000362}, {"entity_code": 4190, "entity_name": "BEAR RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000225}, {"entity_code": 4010, "entity_name": "BOX ELDER MOSQUITO ABATEMENT DISTRICT", "rate": 0.000172}], "JUNCTION": [{"entity_code": 3020, "entity_name": "JUNCTION", "rate": 0.001273}, {"entity_code": 4010, "entity_name": "UPPER SEVIER RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000123}], "SARATOGA SPRINGS": [{"entity_code": 3075, "entity_name": "SARATOGA SPRINGS", "rate": 0.000976}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}, {"entity_code": 4080, "entity_name": "NORTH UTAH COUNTY WATER CONSERVANCY DISTRICT", "rate": 1.1e-05}], "CLARKSTON": [{"entity_code": 3020, "entity_name": "CLARKSTON", "rate": 0.0013}, {"entity_code": 4090, "entity_name": "CACHE MOSQUITO ABATEMENT DISTRICT", "rate": 4.7e-05}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "PLAIN CITY": [{"entity_code": 4010, "entity_name": "CENTRAL WEBER SEWER IMPROVEMENT DISTRICT", "rate": 0.00054}, {"entity_code": 3060, "entity_name": "PLAIN CITY", "rate": 0.000236}, {"entity_code": 4005, "entity_name": "WEBER BASIN WATER CONSERVANCY DISTRICT", "rate": 0.000191}, {"entity_code": 4320, "entity_name": "WEBER AREA DISPATCH 911 AND EMERGENCY SERVICES DISTRICT", "rate": 0.000163}, {"entity_code": 4070, "entity_name": "BONA VISTA WATER IMPROVEMENT DISTRICT", "rate": 0.000145}, {"entity_code": 4080, "entity_name": "WEBER COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 6.4e-05}, {"entity_code": 4030, "entity_name": "PLAIN CITY CEMETERY MAINTENANCE DISTRICT", "rate": 4e-05}], "PANGUITCH": [{"entity_code": 3070, "entity_name": "PANGUITCH", "rate": 0.001136}, {"entity_code": 4100, "entity_name": "UPPER SEVIER RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000123}, {"entity_code": 4020, "entity_name": "PANGUITCH CEMETERY MAINTENANCE DISTRICT", "rate": 9.9e-05}], "GOSHEN": [{"entity_code": 3070, "entity_name": "GOSHEN", "rate": 0.000957}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}], "GENOLA": [{"entity_code": 3060, "entity_name": "GENOLA", "rate": 0.000949}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}], "SANTA CLARA CITY": [{"entity_code": 3090, "entity_name": "SANTA CLARA CITY", "rate": 0.000912}, {"entity_code": 4010, "entity_name": "THE WASHINGTON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000399}, {"entity_code": 4110, "entity_name": "SOUTHWEST MOSQUITO ABATEMENT & CONTROL DISTRICT", "rate": 2.1e-05}], "NAPLES": [{"entity_code": 4270, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 4010, "entity_name": "UINTAH WATER CONSERVANCY DISTRICT", "rate": 0.000399}, {"entity_code": 3020, "entity_name": "NAPLES", "rate": 0.000234}, {"entity_code": 4080, "entity_name": "UINTAH COUNTY MOSQUITO ABATEMENT DISTRICT", "rate": 0.000184}, {"entity_code": 4060, "entity_name": "ASHLEY VALLEY WATER & SEWER IMPROVEMENT DISTRICT", "rate": 0.000114}], "MONA": [{"entity_code": 4015, "entity_name": "JUAB COUNTY FIRE PROTECTION SPECIAL SERVICE DISTRICT", "rate": 0.000429}, {"entity_code": 4270, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 3030, "entity_name": "MONA", "rate": 0.000361}, {"entity_code": 4010, "entity_name": "EAST JUAB COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000113}], "CASTLE VALLEY": [{"entity_code": 3010, "entity_name": "CASTLE VALLEY", "rate": 0.000864}, {"entity_code": 4090, "entity_name": "GRAND COUNTY SERVICE AREA FOR THE CASTLE VALLEY FIRE PROTECTION DISTRICT", "rate": 0.000323}, {"entity_code": 4030, "entity_name": "GRAND COUNTY CEMETERY MAINTENANCE DISTRICT", "rate": 0.000113}], "RICHMOND": [{"entity_code": 3150, "entity_name": "RICHMOND", "rate": 0.001075}, {"entity_code": 4070, "entity_name": "RICHMOND CEMETERY MAINTENANCE DISTRICT", "rate": 0.00013}, {"entity_code": 4090, "entity_name": "CACHE MOSQUITO ABATEMENT DISTRICT", "rate": 4.7e-05}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "DANIEL TOWN": [{"entity_code": 4065, "entity_name": "WASATCH COUNTY FIRE PROTECTION SPECIAL SERVICE DISTRICT", "rate": 0.000413}, {"entity_code": 4270, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}, {"entity_code": 3015, "entity_name": "DANIEL TOWN", "rate": 0.000298}, {"entity_code": 4090, "entity_name": "WASATCH COUNTY SPECIAL SERVICE DISTRICT NO 21", "rate": 0.000157}], "APPLE VALLEY TOWN": [{"entity_code": 3005, "entity_name": "APPLE VALLEY TOWN", "rate": 0.000822}, {"entity_code": 4010, "entity_name": "THE WASHINGTON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000399}, {"entity_code": 4110, "entity_name": "SOUTHWEST MOSQUITO ABATEMENT & CONTROL DISTRICT", "rate": 2.1e-05}], "SCOFIELD": [{"entity_code": 3040, "entity_name": "SCOFIELD", "rate": 0.001115}, {"entity_code": 4010, "entity_name": "CARBON WATER CONSERVANCY DISTRICT", "rate": 0.000125}], "LEVAN": [{"entity_code": 4015, "entity_name": "JUAB COUNTY FIRE PROTECTION SPECIAL SERVICE DISTRICT", "rate": 0.000429}, {"entity_code": 3020, "entity_name": "LEVAN", "rate": 0.000405}, {"entity_code": 4270, "entity_name": "CENTRAL UTAH WATER CONSERVANCY DISTRICT", "rate": 0.0004}], "LEAMINGTON TOWN": [{"entity_code": 3060, "entity_name": "LEAMINGTON TOWN", "rate": 0.000553}, {"entity_code": 4040, "entity_name": "WEST MILLARD MOSQUITO ABATEMENT DISTRICT", "rate": 0.00042}, {"entity_code": 4090, "entity_name": "MILLARD COUNTY FIRE SERVICE DISTRICT", "rate": 0.000247}], "HYDE PARK CITY": [{"entity_code": 3040, "entity_name": "HYDE PARK CITY", "rate": 0.000995}, {"entity_code": 4020, "entity_name": "HYDE PARK CEMETERY MAINTENANCE DISTRICT", "rate": 0.00014}, {"entity_code": 4090, "entity_name": "CACHE MOSQUITO ABATEMENT DISTRICT", "rate": 4.7e-05}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "MARYSVALE": [{"entity_code": 3040, "entity_name": "MARYSVALE", "rate": 0.00108}, {"entity_code": 4010, "entity_name": "UPPER SEVIER RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000123}], "LINDON": [{"entity_code": 3100, "entity_name": "LINDON", "rate": 0.000788}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}, {"entity_code": 4080, "entity_name": "NORTH UTAH COUNTY WATER CONSERVANCY DISTRICT", "rate": 1.1e-05}], "SPRING CITY": [{"entity_code": 3110, "entity_name": "SPRING CITY", "rate": 0.000839}, {"entity_code": 4010, "entity_name": "SANPETE WATER CONSERVANCY DISTRICT", "rate": 0.000342}], "ST GEORGE CITY": [{"entity_code": 3080, "entity_name": "ST GEORGE CITY", "rate": 0.000754}, {"entity_code": 4010, "entity_name": "THE WASHINGTON COUNTY WATER CONSERVANCY DISTRICT", "rate": 0.000399}, {"entity_code": 4110, "entity_name": "SOUTHWEST MOSQUITO ABATEMENT & CONTROL DISTRICT", "rate": 2.1e-05}], "OREM": [{"entity_code": 3120, "entity_name": "OREM", "rate": 0.000755}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}, {"entity_code": 4040, "entity_name": "OREM METROPOLITAN WATER DISTRICT", "rate": 1.6e-05}], "HIGHLAND": [{"entity_code": 3080, "entity_name": "HIGHLAND", "rate": 0.00074}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}, {"entity_code": 4080, "entity_name": "NORTH UTAH COUNTY WATER CONSERVANCY DISTRICT", "rate": 1.1e-05}], "PROVIDENCE": [{"entity_code": 3140, "entity_name": "PROVIDENCE", "rate": 0.001015}, {"entity_code": 4090, "entity_name": "CACHE MOSQUITO ABATEMENT DISTRICT", "rate": 4.7e-05}, {"entity_code": 4030, "entity_name": "MILLVILLE-NIBLEY CEMETERY MAINTENANCE DISTRICT", "rate": 4.6e-05}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "NORTH LOGAN": [{"entity_code": 3120, "entity_name": "NORTH LOGAN", "rate": 0.001026}, {"entity_code": 4090, "entity_name": "CACHE MOSQUITO ABATEMENT DISTRICT", "rate": 4.7e-05}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "MONROE": [{"entity_code": 3070, "entity_name": "MONROE", "rate": 0.001106}], "DEWEYVILLE": [{"entity_code": 3040, "entity_name": "DEWEYVILLE", "rate": 0.000708}, {"entity_code": 4190, "entity_name": "BEAR RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000225}, {"entity_code": 4010, "entity_name": "BOX ELDER MOSQUITO ABATEMENT DISTRICT", "rate": 0.000172}], "SNOWVILLE TOWN": [{"entity_code": 3140, "entity_name": "SNOWVILLE TOWN", "rate": 0.000706}, {"entity_code": 4190, "entity_name": "BEAR RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000225}, {"entity_code": 4010, "entity_name": "BOX ELDER MOSQUITO ABATEMENT DISTRICT", "rate": 0.000172}], "HINCKLEY": [{"entity_code": 4040, "entity_name": "WEST MILLARD MOSQUITO ABATEMENT DISTRICT", "rate": 0.00042}, {"entity_code": 3030, "entity_name": "HINCKLEY", "rate": 0.000259}, {"entity_code": 4090, "entity_name": "MILLARD COUNTY FIRE SERVICE DISTRICT", "rate": 0.000247}, {"entity_code": 4020, "entity_name": "HINCKLEY-DESERET CEMETERY MAINTENANCE DISTRICT", "rate": 0.000174}], "ELWOOD": [{"entity_code": 3050, "entity_name": "ELWOOD", "rate": 0.000675}, {"entity_code": 4190, "entity_name": "BEAR RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000225}, {"entity_code": 4010, "entity_name": "BOX ELDER MOSQUITO ABATEMENT DISTRICT", "rate": 0.000172}], "MANTI": [{"entity_code": 3070, "entity_name": "MANTI", "rate": 0.00072}, {"entity_code": 4010, "entity_name": "SANPETE WATER CONSERVANCY DISTRICT", "rate": 0.000342}], "FAIRVIEW": [{"entity_code": 3030, "entity_name": "FAIRVIEW", "rate": 0.00071}, {"entity_code": 4010, "entity_name": "SANPETE WATER CONSERVANCY DISTRICT", "rate": 0.000342}], "RANDOLPH": [{"entity_code": 3030, "entity_name": "RANDOLPH", "rate": 0.000627}, {"entity_code": 4060, "entity_name": "RANDOLPH FIRE DISTRICT", "rate": 0.000257}, {"entity_code": 4020, "entity_name": "RANDOLPH CEMETERY MAINTENANCE DISTRICT", "rate": 0.000146}], "HOWELL CITY": [{"entity_code": 3090, "entity_name": "HOWELL CITY", "rate": 0.000577}, {"entity_code": 4190, "entity_name": "BEAR RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000225}, {"entity_code": 4010, "entity_name": "BOX ELDER MOSQUITO ABATEMENT DISTRICT", "rate": 0.000172}], "LOGAN CITY": [{"entity_code": 3070, "entity_name": "LOGAN CITY", "rate": 0.000922}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "HYRUM": [{"entity_code": 3050, "entity_name": "HYRUM", "rate": 0.000847}, {"entity_code": 4090, "entity_name": "CACHE MOSQUITO ABATEMENT DISTRICT", "rate": 4.7e-05}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "FIELDING": [{"entity_code": 3060, "entity_name": "FIELDING", "rate": 0.00034}, {"entity_code": 4190, "entity_name": "BEAR RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000225}, {"entity_code": 4030, "entity_name": "FIELDING CEMETERY MAINTENANCE DISTRICT", "rate": 0.000173}, {"entity_code": 4010, "entity_name": "BOX ELDER MOSQUITO ABATEMENT DISTRICT", "rate": 0.000172}], "KINGSTON": [{"entity_code": 3030, "entity_name": "KINGSTON", "rate": 0.000786}, {"entity_code": 4010, "entity_name": "UPPER SEVIER RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000123}], "WELLSVILLE": [{"entity_code": 3190, "entity_name": "WELLSVILLE", "rate": 0.000801}, {"entity_code": 4090, "entity_name": "CACHE MOSQUITO ABATEMENT DISTRICT", "rate": 4.7e-05}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "BEAR RIVER CITY": [{"entity_code": 3010, "entity_name": "BEAR RIVER CITY", "rate": 0.000479}, {"entity_code": 4190, "entity_name": "BEAR RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000225}, {"entity_code": 4010, "entity_name": "BOX ELDER MOSQUITO ABATEMENT DISTRICT", "rate": 0.000172}], "CEDAR FORT": [{"entity_code": 3030, "entity_name": "CEDAR FORT", "rate": 0.000457}, {"entity_code": 4250, "entity_name": "CENTRAL UTAH WATER CONSERVANCY", "rate": 0.0004}], "HONEYVILLE CITY": [{"entity_code": 3080, "entity_name": "HONEYVILLE CITY", "rate": 0.000447}, {"entity_code": 4190, "entity_name": "BEAR RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000225}, {"entity_code": 4010, "entity_name": "BOX ELDER MOSQUITO ABATEMENT DISTRICT", "rate": 0.000172}], "STERLING": [{"entity_code": 3120, "entity_name": "STERLING", "rate": 0.000493}, {"entity_code": 4010, "entity_name": "SANPETE WATER CONSERVANCY DISTRICT", "rate": 0.000342}], "NEWTON": [{"entity_code": 3100, "entity_name": "NEWTON", "rate": 0.000634}, {"entity_code": 4040, "entity_name": "NEWTON CEMETERY MAINTENANCE DISTRICT", "rate": 0.000103}, {"entity_code": 4090, "entity_name": "CACHE MOSQUITO ABATEMENT DISTRICT", "rate": 4.7e-05}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "AURORA": [{"entity_code": 3020, "entity_name": "AURORA", "rate": 0.000795}], "FAYETTE": [{"entity_code": 3040, "entity_name": "FAYETTE", "rate": 0.000434}, {"entity_code": 4010, "entity_name": "SANPETE WATER CONSERVANCY DISTRICT", "rate": 0.000342}], "JOSEPH": [{"entity_code": 3050, "entity_name": "JOSEPH", "rate": 0.000773}], "OAK CITY": [{"entity_code": 3090, "entity_name": "OAK CITY", "rate": 0.000513}, {"entity_code": 4090, "entity_name": "MILLARD COUNTY FIRE SERVICE DISTRICT", "rate": 0.000247}], "CENTRAL VALLEY TOWN": [{"entity_code": 3015, "entity_name": "CENTRAL VALLEY TOWN", "rate": 0.000748}], "ELSINORE": [{"entity_code": 3030, "entity_name": "ELSINORE", "rate": 0.000735}], "WALES": [{"entity_code": 3130, "entity_name": "WALES", "rate": 0.000388}, {"entity_code": 4010, "entity_name": "SANPETE WATER CONSERVANCY DISTRICT", "rate": 0.000342}], "RUSH VALLEY TOWN": [{"entity_code": 3030, "entity_name": "RUSH VALLEY TOWN", "rate": 0.000669}, {"entity_code": 4070, "entity_name": "RUSH VALLEY WATER CONSERVANCY DISTRICT", "rate": 5.3e-05}], "PARAGONAH": [{"entity_code": 3050, "entity_name": "PARAGONAH", "rate": 0.000706}], "SIGUARD": [{"entity_code": 3110, "entity_name": "SIGUARD", "rate": 0.000697}], "FILLMORE": [{"entity_code": 3020, "entity_name": "FILLMORE", "rate": 0.000449}, {"entity_code": 4090, "entity_name": "MILLARD COUNTY FIRE SERVICE DISTRICT", "rate": 0.000247}], "ANTIMONY": [{"entity_code": 3010, "entity_name": "ANTIMONY", "rate": 0.000438}, {"entity_code": 4100, "entity_name": "UPPER SEVIER RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000123}, {"entity_code": 4010, "entity_name": "ANTIMONY CEMETERY IMPROVEMENT DISTRICT", "rate": 0.000111}], "CENTERFIELD": [{"entity_code": 4010, "entity_name": "SANPETE WATER CONSERVANCY DISTRICT", "rate": 0.000342}, {"entity_code": 3010, "entity_name": "CENTERFIELD", "rate": 0.000325}], "MILLVILLE": [{"entity_code": 3090, "entity_name": "MILLVILLE", "rate": 0.00052}, {"entity_code": 4090, "entity_name": "CACHE MOSQUITO ABATEMENT DISTRICT", "rate": 4.7e-05}, {"entity_code": 4030, "entity_name": "MILLVILLE-NIBLEY CEMETERY MAINTENANCE DISTRICT", "rate": 4.6e-05}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "PLYMOUTH": [{"entity_code": 4190, "entity_name": "BEAR RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000225}, {"entity_code": 4010, "entity_name": "BOX ELDER MOSQUITO ABATEMENT DISTRICT", "rate": 0.000172}, {"entity_code": 3120, "entity_name": "PLYMOUTH", "rate": 0.000112}, {"entity_code": 4090, "entity_name": "PLYMOUTH CEMETERY MAINTENANCE DISTRICT", "rate": 9.2e-05}], "PARADISE": [{"entity_code": 3130, "entity_name": "PARADISE", "rate": 0.000506}, {"entity_code": 4050, "entity_name": "PARADISE CEMETERY MAINTENANCE DISTRICT", "rate": 4.8e-05}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "TROPIC": [{"entity_code": 3080, "entity_name": "TROPIC", "rate": 0.000373}, {"entity_code": 4100, "entity_name": "UPPER SEVIER RIVER WATER CONSERVANCY DISTRICT", "rate": 0.000123}, {"entity_code": 4050, "entity_name": "TROPIC CEMETERY MAINTENANCE DISTRICT", "rate": 8.2e-05}], "SCIPIO": [{"entity_code": 3100, "entity_name": "SCIPIO", "rate": 0.000325}, {"entity_code": 4090, "entity_name": "MILLARD COUNTY FIRE SERVICE DISTRICT", "rate": 0.000247}], "REDMOND": [{"entity_code": 3080, "entity_name": "REDMOND", "rate": 0.000557}], "BEAVER": [{"entity_code": 4010, "entity_name": "BEAVER COUNTY SPECIAL SERVICE DISTRICT NO.1", "rate": 0.000375}, {"entity_code": 3010, "entity_name": "BEAVER", "rate": 0.00017}], "GLENWOOD": [{"entity_code": 3040, "entity_name": "GLENWOOD", "rate": 0.000542}], "LAKETOWN": [{"entity_code": 3020, "entity_name": "LAKETOWN", "rate": 0.000366}, {"entity_code": 4070, "entity_name": "LAKETOWN FIRE DISTRICT", "rate": 0.000127}, {"entity_code": 4030, "entity_name": "LAKETOWN CEMETERY MAINTENANCE DISTRICT", "rate": 4.5e-05}], "HENRIEVILLE": [{"entity_code": 3060, "entity_name": "HENRIEVILLE", "rate": 0.000381}, {"entity_code": 4070, "entity_name": "HENRIEVILLE CEMETERY MAINTENANCE DISTRICT", "rate": 0.00014}], "MEADOW": [{"entity_code": 3080, "entity_name": "MEADOW", "rate": 0.000266}, {"entity_code": 4090, "entity_name": "MILLARD COUNTY FIRE SERVICE DISTRICT", "rate": 0.000247}], "RIVER HEIGHTS": [{"entity_code": 3160, "entity_name": "RIVER HEIGHTS", "rate": 0.000476}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "AMALGA": [{"entity_code": 3010, "entity_name": "AMALGA", "rate": 0.000419}, {"entity_code": 4090, "entity_name": "CACHE MOSQUITO ABATEMENT DISTRICT", "rate": 4.7e-05}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "HOLDEN": [{"entity_code": 3040, "entity_name": "HOLDEN", "rate": 0.000254}, {"entity_code": 4090, "entity_name": "MILLARD COUNTY FIRE SERVICE DISTRICT", "rate": 0.000247}], "TRENTON": [{"entity_code": 3180, "entity_name": "TRENTON", "rate": 0.000382}, {"entity_code": 4090, "entity_name": "CACHE MOSQUITO ABATEMENT DISTRICT", "rate": 4.7e-05}, {"entity_code": 4100, "entity_name": "CACHE WATER IMPROVEMENT DISTRICT", "rate": 3.5e-05}], "VERNON": [{"entity_code": 3060, "entity_name": "VERNON", "rate": 0.000385}, {"entity_code": 4070, "entity_name": "RUSH VALLEY WATER CONSERVANCY DISTRICT", "rate": 5.3e-05}], "HANKSVILLE TOWN": [{"entity_code": 3015, "entity_name": "HANKSVILLE TOWN", "rate": 0.000375}, {"entity_code": 4020, "entity_name": "WAYNE COUNTY WATER CONSERVANCY DISTRICT", "rate": 1.5e-05}], "ANNABELLA TOWN": [{"entity_code": 3010, "entity_name": "ANNABELLA TOWN", "rate": 0.00038}], "GARDEN CITY": [{"entity_code": 3010, "entity_name": "GARDEN CITY", "rate": 0.000191}, {"entity_code": 4050, "entity_name": "GARDEN CITY PICKELVILLE FIRE DISTRICT", "rate": 0.000163}, {"entity_code": 4010, "entity_name": "GARDEN CITY-PICKELVILLE CEMETERY DISTRICT", "rate": 2.3e-05}], "KANOSH": [{"entity_code": 4090, "entity_name": "MILLARD COUNTY FIRE SERVICE DISTRICT", "rate": 0.000247}, {"entity_code": 3050, "entity_name": "KANOSH", "rate": 0.000121}], "KOOSHAREM TOWN": [{"entity_code": 3060, "entity_name": "KOOSHAREM TOWN", "rate": 0.000202}], "LYMAN": [{"entity_code": 3030, "entity_name": "LYMAN", "rate": 0.000181}, {"entity_code": 4020, "entity_name": "WAYNE COUNTY WATER CONSERVANCY DISTRICT", "rate": 1.5e-05}], "BOULDER": [{"entity_code": 3020, "entity_name": "BOULDER", "rate": 0.000192}], "TORREY": [{"entity_code": 3040, "entity_name": "TORREY", "rate": 0.000132}, {"entity_code": 4020, "entity_name": "WAYNE COUNTY WATER CONSERVANCY DISTRICT", "rate": 1.5e-05}], "BICKNELL": [{"entity_code": 3010, "entity_name": "BICKNELL", "rate": 0.000118}, {"entity_code": 4020, "entity_name": "WAYNE COUNTY WATER CONSERVANCY DISTRICT", "rate": 1.5e-05}], "LOA": [{"entity_code": 3020, "entity_name": "LOA", "rate": 0.000117}, {"entity_code": 4020, "entity_name": "WAYNE COUNTY WATER CONSERVANCY DISTRICT", "rate": 1.5e-05}]};
+
+        let currentSort = 'max_local_rate';
+        let showAll = false;
+        let hideSmallCities = true;
+        const INITIAL_DISPLAY = 20;
+
+        function formatRate(rate) {
+            return rate.toFixed(6);
+        }
+
+        function formatNumber(num) {
+            if (num === null || num === 0) return 'N/A';
+            return num.toLocaleString();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            // Filter cities based on checkbox
+            let filteredCities = citiesData;
+            if (hideSmallCities) {
+                filteredCities = citiesData.filter(c => c.area_sq_miles >= 5);
+            }
+
+            // Find Ogden Valley City indices in filtered data
+            const ogdenValleyIndex = filteredCities.findIndex(c => c.city_name === 'OGDEN VALLEY CITY (2025 RATE)');
+            const ogdenValleyProposedIndex = filteredCities.findIndex(c => c.city_name === 'OGDEN VALLEY CITY (PROPOSED RATE)');
+
+            // Determine how many to show
+            let displayCount = INITIAL_DISPLAY;
+
+            // If either Ogden Valley variant is not shown in the first INITIAL_DISPLAY rows,
+            // extend to show both variants plus 2 more rows
+            const maxOgdenIndex = Math.max(ogdenValleyIndex, ogdenValleyProposedIndex);
+            if (maxOgdenIndex >= INITIAL_DISPLAY) {
+                displayCount = Math.max(displayCount, maxOgdenIndex + 3);
+            }
+
+            // Ensure at least INITIAL_DISPLAY rows are shown
+            displayCount = Math.max(displayCount, INITIAL_DISPLAY);
+
+            if (showAll) {
+                displayCount = filteredCities.length;
+            }
+
+            for (let i = 0; i < displayCount; i++) {
+                const city = filteredCities[i];
+                const isOgdenValley = city.city_name === 'OGDEN VALLEY CITY (2025 RATE)';
+                const isOgdenValleyProposed = city.city_name === 'OGDEN VALLEY CITY (PROPOSED RATE)';
+
+                const row = document.createElement('tr');
+                if (isOgdenValley) {
+                    row.className = 'ogden-valley';
+                } else if (isOgdenValleyProposed) {
+                    row.className = 'ogden-valley-proposed';
+                }
+
+                const entities = entitiesData[city.city_name] || [];
+                const hasEntities = entities.length > 0;
+
+                row.innerHTML = `
+                    <td>
+                        ${hasEntities ? `<button class="expand-btn" onclick="toggleExpand('${city.city_name}', this)">▶</button>` : ''}
+                    </td>
+                    <td>${i + 1}</td>
+                    <td>${city.city_name}</td>
+                    <td>${city.county}</td>
+                    <td class="numeric rate-cell">${formatRate(city.max_local_rate)}</td>
+                    <td class="numeric">${formatNumber(city.population)}</td>
+                    <td class="numeric">${city.area_sq_miles.toFixed(2)}</td>
+                `;
+                tbody.appendChild(row);
+
+                // Add entity rows
+                if (hasEntities) {
+                    // Add tax area row first
+                    const taxAreaRow = document.createElement('tr');
+                    taxAreaRow.className = 'entity-row';
+                    taxAreaRow.dataset.city = city.city_name;
+                    const taxAreaStr = `${city.max_tax_area} - ${String(city.max_tax_area_ext).padStart(4, '0')}`;
+                    taxAreaRow.innerHTML = `
+                        <td></td>
+                        <td colspan="6" class="entity-cell">tax area: ${taxAreaStr}</td>
+                    `;
+                    tbody.appendChild(taxAreaRow);
+
+                    // Add entity rows
+                    entities.forEach(entity => {
+                        const entityRow = document.createElement('tr');
+                        entityRow.className = 'entity-row';
+                        entityRow.dataset.city = city.city_name;
+                        entityRow.innerHTML = `
+                            <td></td>
+                            <td></td>
+                            <td class="entity-cell">${entity.entity_code}</td>
+                            <td class="entity-cell entity-name">${entity.entity_name}</td>
+                            <td colspan="4" class="entity-cell entity-rate">${formatRate(entity.rate)}</td>
+                        `;
+                        tbody.appendChild(entityRow);
+                    });
+                }
+            }
+
+            // Show/hide "Show All" button
+            const showAllBtn = document.getElementById('showAllBtn');
+            if (showAll || displayCount >= filteredCities.length) {
+                showAllBtn.classList.add('hidden');
+            } else {
+                showAllBtn.classList.remove('hidden');
+            }
+
+            // Update city count display
+            const cityCountEl = document.getElementById('cityCount');
+            cityCountEl.textContent = `${filteredCities.length} available cities`;
+        }
+
+        function toggleSmallCities() {
+            hideSmallCities = document.getElementById('hideSmallCities').checked;
+            showAll = false;
+            renderTable();
+            // Re-render chart if it's visible
+            if (document.getElementById('chartContainer').classList.contains('visible')) {
+                renderChart();
+            }
+        }
+
+        function toggleExpand(cityName, btn) {
+            const entityRows = document.querySelectorAll(`.entity-row[data-city="${cityName}"]`);
+            entityRows.forEach(row => {
+                row.classList.toggle('visible');
+            });
+            btn.classList.toggle('expanded');
+        }
+
+        function sortBy(field) {
+            currentSort = field;
+
+            // Update column header styling
+            document.querySelectorAll('.sortable').forEach(th => {
+                th.classList.remove('sorted');
+                const indicator = th.querySelector('.sort-indicator');
+                if (indicator) {
+                    indicator.textContent = '';
+                }
+            });
+
+            // Highlight the clicked column and add arrow
+            const clickedHeader = document.querySelector(`[data-sort="${field}"]`);
+            if (clickedHeader) {
+                clickedHeader.classList.add('sorted');
+                const indicator = clickedHeader.querySelector('.sort-indicator');
+                if (indicator) {
+                    indicator.textContent = '▼';
+                }
+            }
+
+            // Sort all cities including Ogden Valley variants
+            citiesData.sort((a, b) => {
+                if (field === 'city_name') {
+                    return a.city_name.localeCompare(b.city_name);
+                } else if (field === 'max_local_rate') {
+                    return b.max_local_rate - a.max_local_rate;
+                } else if (field === 'population') {
+                    return (b.population || 0) - (a.population || 0);
+                } else if (field === 'area_sq_miles') {
+                    return b.area_sq_miles - a.area_sq_miles;
+                }
+                return 0;
+            });
+
+            showAll = false;
+            renderTable();
+        }
+
+        function showAllCities() {
+            showAll = true;
+            renderTable();
+        }
+
+        function switchView(view) {
+            const tableViewBtn = document.getElementById('tableViewBtn');
+            const chartViewBtn = document.getElementById('chartViewBtn');
+            const dataTable = document.getElementById('dataTable');
+            const chartContainer = document.getElementById('chartContainer');
+            const showAllBtn = document.getElementById('showAllBtn');
+
+            if (view === 'table') {
+                tableViewBtn.classList.add('active');
+                chartViewBtn.classList.remove('active');
+                dataTable.classList.remove('hidden');
+                chartContainer.classList.remove('visible');
+                showAllBtn.classList.remove('hidden');
+            } else {
+                chartViewBtn.classList.add('active');
+                tableViewBtn.classList.remove('active');
+                dataTable.classList.add('hidden');
+                chartContainer.classList.add('visible');
+                showAllBtn.classList.add('hidden');
+                renderChart();
+            }
+        }
+
+        function calculateStats(rates) {
+            const sorted = [...rates].sort((a, b) => a - b);
+            const n = sorted.length;
+            const sum = sorted.reduce((a, b) => a + b, 0);
+            const mean = sum / n;
+            const median = n % 2 === 0 ? (sorted[n/2 - 1] + sorted[n/2]) / 2 : sorted[Math.floor(n/2)];
+            const variance = sorted.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / n;
+            const std = Math.sqrt(variance);
+            const q25 = sorted[Math.floor(n * 0.25)];
+            const q75 = sorted[Math.floor(n * 0.75)];
+
+            return {
+                count: n,
+                min: sorted[0],
+                max: sorted[n - 1],
+                mean: mean,
+                median: median,
+                std: std,
+                q25: q25,
+                q75: q75
+            };
+        }
+
+        function renderChart() {
+            // Filter cities based on checkbox
+            let filteredCities = citiesData;
+            if (hideSmallCities) {
+                filteredCities = citiesData.filter(c => c.area_sq_miles >= 5);
+            }
+
+            const rates = filteredCities.map(c => c.max_local_rate);
+            const stats = calculateStats(rates);
+
+            // Create histogram bins
+            const binCount = 20;
+            const minRate = stats.min;
+            const maxRate = stats.max;
+            const binWidth = (maxRate - minRate) / binCount;
+            const bins = new Array(binCount).fill(0);
+            const binLabels = [];
+
+            for (let i = 0; i < binCount; i++) {
+                const binStart = minRate + i * binWidth;
+                const binEnd = binStart + binWidth;
+                binLabels.push(binStart.toFixed(6));
+            }
+
+            rates.forEach(rate => {
+                const binIndex = Math.min(Math.floor((rate - minRate) / binWidth), binCount - 1);
+                bins[binIndex]++;
+            });
+
+            // Find Ogden Valley City rates
+            const ovc2025 = filteredCities.find(c => c.city_name === 'OGDEN VALLEY CITY (2025 RATE)');
+            const ovcProposed = filteredCities.find(c => c.city_name === 'OGDEN VALLEY CITY (PROPOSED RATE)');
+
+            // OVC labels are now drawn directly on the chart, no legend needed
+            const ovcLegendHTML = '';
+
+            // Add statistics legend
+            const statsLegendHTML = `
+                <div style="width: 100%; margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd;">
+                    <div style="font-size: 12px; color: #666; margin-bottom: 8px;">Quartiles:</div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(231, 76, 60, 0.3); border: 1px solid #e74c3c;"></span><span style="font-size: 13px;">First Quartile (0-25%)</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(243, 156, 18, 0.3); border: 1px solid #f39c12;"></span><span style="font-size: 13px;">Second Quartile (25-50%)</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="width: 20px; height: 12px; background: rgba(46, 204, 113, 0.3); border: 1px solid #2ecc71;"></span><span style="font-size: 13px;">Third Quartile (50-75%)</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 20px; height: 12px; background: rgba(52, 152, 219, 0.3); border: 1px solid #3498db;"></span><span style="font-size: 13px;">Fourth Quartile (75-100%)</span></div>
+                </div>
+            `;
+
+            // Render stats
+            const statsContainer = document.getElementById('statsContainer');
+            statsContainer.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-label">Count</div>
+                    <div class="stat-value">${stats.count}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Min</div>
+                    <div class="stat-value">${stats.min.toFixed(6)}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Max</div>
+                    <div class="stat-value">${stats.max.toFixed(6)}</div>
+                </div>
+                <div style="width: 100%;"></div>
+                <div class="stat-item">
+                    <div class="stat-label">Median</div>
+                    <div class="stat-value">${stats.median.toFixed(6)}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Std Dev</div>
+                    <div class="stat-value">${stats.std.toFixed(6)}</div>
+                </div>
+                <div style="width: 100%;"></div>
+                ${ovc2025 ? `<div class="stat-item"><div class="stat-label">OVC 2025</div><div class="stat-value">${ovc2025.max_local_rate.toFixed(6)}</div></div>` : ''}
+                ${ovcProposed ? `<div class="stat-item"><div class="stat-label">OVC Proposed</div><div class="stat-value">${ovcProposed.max_local_rate.toFixed(6)}</div></div>` : ''}
+                ${statsLegendHTML}
+            `;
+
+            // Destroy existing chart if it exists
+            if (window.rateChartInstance) {
+                window.rateChartInstance.destroy();
+            }
+
+            // Create chart
+            const ctx = document.getElementById('rateChart').getContext('2d');
+
+            // Inline plugin that draws quartile regions and OVC marker lines.
+            // The x-axis is a category axis, so we convert each rate to a pixel
+            // position using the spacing between category ticks.
+            const ovcMarkerPlugin = {
+                id: 'ovcMarkers',
+                beforeDatasetsDraw(chart) {
+                    const xAxis = chart.scales.x;
+                    const yAxis = chart.scales.y;
+                    // Pixel centers of bin 0 and bin 1 give us pixels-per-bin.
+                    const x0 = xAxis.getPixelForTick(0);
+                    const x1 = xAxis.getPixelForTick(1);
+                    const pxPerBin = x1 - x0;
+
+                    function pixelForRate(rate) {
+                        // Bin i is centered on rate (minRate + (i+0.5)*binWidth),
+                        // so the fractional bin index for a rate is:
+                        const fracIndex = (rate - minRate) / binWidth - 0.5;
+                        return x0 + fracIndex * pxPerBin;
+                    }
+
+                    function drawFilledRegion(startRate, endRate, color) {
+                        const xStart = pixelForRate(startRate);
+                        const xEnd = pixelForRate(endRate);
+                        chart.ctx.save();
+                        chart.ctx.fillStyle = color;
+                        chart.ctx.fillRect(xStart, yAxis.top, xEnd - xStart, yAxis.bottom - yAxis.top);
+                        chart.ctx.restore();
+                    }
+
+                    // Draw quartile regions behind the main curve
+                    drawFilledRegion(stats.min, stats.q25, 'rgba(231, 76, 60, 0.3)');      // Q1 - red
+                    drawFilledRegion(stats.q25, stats.median, 'rgba(243, 156, 18, 0.3)');  // Q2 - orange
+                    drawFilledRegion(stats.median, stats.q75, 'rgba(46, 204, 113, 0.3)');  // Q3 - green
+                    drawFilledRegion(stats.q75, stats.max, 'rgba(52, 152, 219, 0.3)');    // Q4 - blue
+                },
+                afterDatasetsDraw(chart) {
+                    const xAxis = chart.scales.x;
+                    const yAxis = chart.scales.y;
+                    // Pixel centers of bin 0 and bin 1 give us pixels-per-bin.
+                    const x0 = xAxis.getPixelForTick(0);
+                    const x1 = xAxis.getPixelForTick(1);
+                    const pxPerBin = x1 - x0;
+
+                    function pixelForRate(rate) {
+                        // Bin i is centered on rate (minRate + (i+0.5)*binWidth),
+                        // so the fractional bin index for a rate is:
+                        const fracIndex = (rate - minRate) / binWidth - 0.5;
+                        return x0 + fracIndex * pxPerBin;
+                    }
+
+                    function drawLine(rate, color, dashed = false) {
+                        const x = pixelForRate(rate);
+                        chart.ctx.save();
+                        chart.ctx.strokeStyle = color;
+                        chart.ctx.lineWidth = 2;
+                        if (dashed) {
+                            chart.ctx.setLineDash([6, 4]);
+                        }
+                        chart.ctx.beginPath();
+                        chart.ctx.moveTo(x, yAxis.top);
+                        chart.ctx.lineTo(x, yAxis.bottom);
+                        chart.ctx.stroke();
+                        chart.ctx.restore();
+                    }
+
+                    function drawLabel(rate, text, color) {
+                        const x = pixelForRate(rate);
+                        chart.ctx.save();
+                        chart.ctx.font = '12px sans-serif';
+                        chart.ctx.fillStyle = color;
+                        chart.ctx.textAlign = 'center';
+                        chart.ctx.textBaseline = 'top';
+                        // Draw label at top of chart
+                        chart.ctx.fillText(text, x, yAxis.top + 5);
+                        chart.ctx.restore();
+                    }
+
+                    // Draw OVC lines on top
+                    if (ovc2025) {
+                        drawLine(ovc2025.max_local_rate, '#9b59b6', true);
+                        drawLabel(ovc2025.max_local_rate, 'OVC 2025', '#9b59b6');
+                    }
+                    if (ovcProposed) {
+                        drawLine(ovcProposed.max_local_rate, '#28a745', true);
+                        drawLabel(ovcProposed.max_local_rate, 'OVC Proposed', '#28a745');
+                    }
+                }
+            };
+
+            window.rateChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: binLabels,
+                    datasets: [{
+                        label: 'Number of Cities',
+                        data: bins,
+                        backgroundColor: 'rgba(0, 102, 204, 0.5)',
+                        borderColor: 'rgba(0, 102, 204, 1)',
+                        borderWidth: 1,
+                        barPercentage: 1.0,
+                        categoryPercentage: 1.0
+                    }]
+                },
+                plugins: [ovcMarkerPlugin],
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: ['How Utah Cities Stack Up on Local-Ish Taxes', '(Number of Cities in Each Tax Rate Range)'],
+                            font: { size: 16 },
+                            padding: { bottom: 20 }
+                        },
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    const idx = context[0].dataIndex;
+                                    const binStart = minRate + idx * binWidth;
+                                    const binEnd = binStart + binWidth;
+                                    return `Range: ${binStart.toFixed(6)} - ${binEnd.toFixed(6)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tax Rate'
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Number of Cities'
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+        }
+
+        // Initial render
+        // Set initial sort indicator
+        const initialHeader = document.querySelector(`[data-sort="${currentSort}"]`);
+        if (initialHeader) {
+            initialHeader.classList.add('sorted');
+            const indicator = initialHeader.querySelector('.sort-indicator');
+            if (indicator) {
+                indicator.textContent = '▼';
+            }
+        }
+        renderTable();
+        // Chart is the default view, so render it on load.
+        renderChart();
+    </script>
+</body>
+</html>
