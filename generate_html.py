@@ -801,8 +801,11 @@ html_template = """<!DOCTYPE html>
                     const xAxis = chart.scales.x;
                     const yAxis = chart.scales.y;
                     // Pixel centers of bin 0 and bin 1 give us pixels-per-bin.
-                    const x0 = xAxis.getPixelForTick(0);
-                    const x1 = xAxis.getPixelForTick(1);
+                    // Use getPixelForValue (indexes by category value) rather than
+                    // getPixelForTick, which breaks when Chart.js auto-skips ticks
+                    // on narrow (mobile) canvases.
+                    const x0 = xAxis.getPixelForValue(0);
+                    const x1 = xAxis.getPixelForValue(1);
                     const pxPerBin = x1 - x0;
 
                     function pixelForRate(rate) {
@@ -831,8 +834,11 @@ html_template = """<!DOCTYPE html>
                     const xAxis = chart.scales.x;
                     const yAxis = chart.scales.y;
                     // Pixel centers of bin 0 and bin 1 give us pixels-per-bin.
-                    const x0 = xAxis.getPixelForTick(0);
-                    const x1 = xAxis.getPixelForTick(1);
+                    // Use getPixelForValue (indexes by category value) rather than
+                    // getPixelForTick, which breaks when Chart.js auto-skips ticks
+                    // on narrow (mobile) canvases.
+                    const x0 = xAxis.getPixelForValue(0);
+                    const x1 = xAxis.getPixelForValue(1);
                     const pxPerBin = x1 - x0;
 
                     function pixelForRate(rate) {
