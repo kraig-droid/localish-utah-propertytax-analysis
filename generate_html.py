@@ -408,21 +408,27 @@ html_template = """<!DOCTYPE html>
                 <a href="https://files.tax.utah.gov/propertytax/tax-rates/area-rates/taxarearates2025.pdf" target="_blank">Source document: Utah Tax Area Rates 2025 (PDF)</a>
             </p>
             <h3>Local-ish Rate Calculation</h3>
+            <p>
+                Entities are classified by the leading digit of their State Tax Commission entity code
+                (the thousands band). Cities (3xxx) and local service/improvement districts (4xxx) are
+                included; counties (1xxx), schools (2xxx), and Public Infrastructure Districts (5xxx) are
+                excluded. Libraries are excluded by name regardless of code.
+            </p>
             <h4>Included in local-ish rates</h4>
             <ul>
-                <li>City general fund taxes (including county-collected city-level general fund taxes for unincorporated areas)</li>
-                <li>Parks and recreation districts</li>
-                <li>Water and sewer districts</li>
-                <li>Fire protection districts</li>
-                <li>Special service districts</li>
-                <li>Other local government entities serving specific geographic areas</li>
+                <li>City general fund taxes (3xxx), including county-collected city-level general fund taxes for unincorporated areas</li>
+                <li>Water, sewer, and irrigation <em>improvement</em> districts (4xxx) &mdash; e.g. Central Weber Sewer Improvement District</li>
+                <li>Parks and recreation districts (4xxx)</li>
+                <li>Fire protection districts (4xxx)</li>
+                <li>Mosquito abatement, cemetery, and other special service districts (4xxx)</li>
+                <li>County municipal-type service funds and local bond levies (6xxx), such as municipal service funds and fire-district bonds</li>
             </ul>
             <h4>Excluded from local-ish rates</h4>
             <ul>
-                <li>County rates - General county government taxes that apply county-wide</li>
-                <li>School district rates - Public school funding that applies across entire school districts</li>
-                <li>Library rates - County library system taxes</li>
-                <li>Public Improvement Districts (PID) - Special districts for infrastructure improvements</li>
+                <li>County rates (1xxx) &mdash; general county government taxes that apply county-wide</li>
+                <li>School district rates (2xxx) &mdash; public school funding that applies across entire school districts</li>
+                <li>Library rates &mdash; county library system taxes (excluded by name, whatever the code)</li>
+                <li>Public Infrastructure Districts (PID, 5xxx) &mdash; developer-financed districts (statutorily named "Public Infrastructure District") that fund infrastructure for a specific new development. Note these are distinct from the older water/sewer <em>Improvement</em> Districts (4xxx), which <strong>are</strong> included.</li>
             </ul>
             <p>
                 <strong>Example: Riverdale (Weber County)</strong><br>
